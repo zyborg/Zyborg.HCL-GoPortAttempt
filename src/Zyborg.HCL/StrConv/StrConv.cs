@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace Zyborg.HCL
+namespace Zyborg.HCL.StrConv
 {
     public static class StrConv
     {

@@ -7,6 +7,123 @@ namespace Zyborg.IO
     public class sliceTests
     {
         [TestMethod]
+        public void TestEmpty()
+        {
+            slice<byte> s1 = default(slice<byte>);
+
+            Assert.IsTrue(s1.IsEmpty);
+            Assert.AreEqual(0, s1.Length);
+            Assert.AreEqual(0, s1.Capacity);
+            Assert.AreEqual(slice<byte>.Empty, s1);
+
+            slice<int> s2a = default(slice<int>);
+            slice<int> s2b = default(slice<int>);
+
+            Assert.IsTrue(s2a.IsEmpty);
+            Assert.AreEqual(s2a, s2b);
+            Assert.AreEqual(s2a, slice<int>.Empty);
+
+            var array = new int[] { 10, 20, 30 };
+            var s3a = array.slice();
+            var s3b = array.slice();
+
+            Assert.AreNotEqual(s2a, s3a);
+            Assert.AreEqual(s3a, s3b);
+
+            Assert.IsTrue(slice<byte>.Empty.IsEmpty);
+            Assert.IsTrue(slice<int>.Empty.IsEmpty);
+            Assert.IsTrue(slice<string>.Empty.IsEmpty);
+            Assert.IsTrue(slice<Array>.Empty.IsEmpty);
+        }
+
+        [TestMethod]
+        public void TestLiteral()
+        {
+            var s1 = slice<int>.Make(5, 10);
+            Assert.AreEqual("[0 0 0 0 0]", s1.ToString());
+
+            var s2 = slice<int>.From(0, 1, 2, 4, 8, 16);
+            Assert.AreEqual("[0 1 2 4 8 16]", s2.ToString());
+        }
+
+        [TestMethod]
+        public void TestCopy()
+        {
+            var s1 = slice<int>.From(10, 20, 30, 40, 50);
+            var s2 = slice<int>.Make(5);
+
+            Assert.AreEqual("[10 20 30 40 50]", s1.ToString());
+            Assert.AreEqual("[0 0 0 0 0]", s2.ToString());
+
+            s1.CopyTo(s2);
+            Assert.AreEqual("[10 20 30 40 50]", s2.ToString());
+
+            s2 = slice<int>.Make(3);
+            s1.CopyTo(s2);
+            Assert.AreEqual("[10 20 30]", s2.ToString());
+            
+            s2 = slice<int>.Make(7);
+            s1.CopyTo(s2);
+            Assert.AreEqual("[10 20 30 40 50 0 0]", s2.ToString());
+        }
+
+        [TestMethod]
+        public void TestOverlapCopy()
+        {
+            var array = new int[] { 10, 20, 30, 40, 50, 60, 70, 80 };
+            var slice = array.slice();
+
+            Assert.AreEqual("[10 20 30 40 50 60 70 80]", slice<int>.ToString(array));
+            Assert.AreEqual("[10 20 30 40 50 60 70 80]", slice.ToString());
+
+            var s1 = array.slice(2, 6);
+            Assert.AreEqual("[30 40 50 60]", s1.ToString());
+            var s2 = array.slice(4, 8);
+            Assert.AreEqual("[50 60 70 80]", s2.ToString());
+
+            s1.CopyTo(s2);
+            Assert.AreEqual("[30 40 50 60]", s2.ToString());
+            Assert.AreEqual("[10 20 30 40 30 40 50 60]", slice<int>.ToString(array));
+
+            // --
+
+            array = new int[] { 10, 20, 30, 40, 50, 60, 70, 80 };
+            slice = array.slice();
+
+            Assert.AreEqual("[10 20 30 40 50 60 70 80]", slice<int>.ToString(array));
+            Assert.AreEqual("[10 20 30 40 50 60 70 80]", slice.ToString());
+
+            s1 = array.slice(2, 6);
+            Assert.AreEqual("[30 40 50 60]", s1.ToString());
+            s2 = array.slice(4, 8);
+            Assert.AreEqual("[50 60 70 80]", s2.ToString());
+
+            s2.CopyTo(s1);
+            Assert.AreEqual("[50 60 70 80]", s1.ToString());
+            Assert.AreEqual("[10 20 50 60 70 80 70 80]", slice<int>.ToString(array));
+        }
+
+        [TestMethod]
+        public void TestAppend()
+        {
+            var s1 = slice<int>.Empty;
+
+            Assert.AreEqual(0, s1.Length);
+            Assert.AreEqual(0, s1.Capacity);
+            Assert.AreEqual("[]", s1.ToString());
+
+            s1 = s1.Append(12, 13, 14);
+            Assert.AreEqual(3, s1.Length);
+            Assert.AreEqual(8, s1.Capacity);
+            Assert.AreEqual("[12 13 14]", s1.ToString());
+            
+            s1 = s1.Append(25, 26, 27, 28);
+            Assert.AreEqual(7, s1.Length);
+            Assert.AreEqual(8, s1.Capacity);
+            Assert.AreEqual("[12 13 14 25 26 27 28]", s1.ToString());
+        }
+
+        [TestMethod]
         public void TestGoodLowLenCap()
         {
             var array = new byte[100];

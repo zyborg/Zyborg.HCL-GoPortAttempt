@@ -6,6 +6,8 @@ namespace Zyborg.IO
 {
     public struct slice<T> : IEnumerable<T>
     {
+        public static readonly slice<T> Empty = default(slice<T>);
+
         private T[] _array;
         private int _lower;
         private int _upper;
@@ -37,10 +39,12 @@ namespace Zyborg.IO
             
         }
 
+        public bool IsEmpty => _array == null;
+
         public int Lower => _lower;
         public int Upper => _upper;
         public int Length => _upper - _lower;
-        public int Capacity => _array.Length - _lower;
+        public int Capacity => _array == null ? 0 : _array.Length - _lower;
 
         public T this[int index]
         {
@@ -71,9 +75,70 @@ namespace Zyborg.IO
                 yield return _array[index];
         }
  
+        public int CopyTo(slice<T> dst)
+        {
+            int max = Math.Min(this.Length, dst.Length);
+
+            // Properly handle copying overlapping regions
+            if (this._array == dst._array && dst._lower > this._lower)
+            {
+                for (int i = max - 1; i >= 0; --i)
+                    dst[i] = this[i];
+            }
+            else
+            {
+                for (int i = 0; i < max; ++i)
+                    dst[i] = this[i];
+            }
+
+            return max;
+        }
+
+        public slice<T> Append(params T[] items)
+        {
+            // TODO: naive implementation, optimize
+            return AppendAll(new slice<T>(items));
+        }
+
+        public slice<T> AppendAll(slice<T> items)
+        {
+            // TODO: naive implementation (based on AppendByte sample in
+            // https://blog.golang.org/go-slices-usage-and-internals), optimize
+            var len = this.Length;
+            var n = Length + items.Length;
+            var s = this;
+
+            if (n > this.Capacity) // if necessary, reallocate
+            {
+                // allocate double what's needed, for future growth (+1 in case n == 0)
+                s = slice<T>.Make((n + 1) * 2);
+                this.CopyTo(s);
+            }
+            s = s.slice(0, n);
+            items.CopyTo(s.slice(len, n));
+            return s;
+        }
+
         public override string ToString()
         {
             return ToString(this);
+        }
+        
+        public static slice<T> Make(int length, int capacity = int.MinValue)
+        {
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length));
+            if (capacity == int.MinValue)
+                capacity = length;
+            if (capacity < length)
+                throw new ArgumentException("length cannot exceed capacity", nameof(capacity));
+
+            return new slice<T>(new T[capacity], 0, length);
+        }
+        
+        public static slice<T> From(params T[] items)
+        {
+            return new slice<T>(items);
         }
 
         public static string ToString(IEnumerable<T> e)

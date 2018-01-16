@@ -28,9 +28,9 @@ namespace Zyborg.IO
 
         public slice(slice<T> s, int lower = 0, int upper = int.MinValue)
         {
-            if (lower < 0 || lower > s._array.Length - s._lower)
+            if (lower < 0 || lower > s._array?.Length - s._lower)
                 throw new ArgumentOutOfRangeException(nameof(lower));
-            if (upper != int.MinValue && (upper < lower || upper > s._array.Length - s._lower))
+            if (upper != int.MinValue && (upper < lower || upper > s._array?.Length - s._lower))
                 throw new ArgumentOutOfRangeException(nameof(upper));
 
             _array = s._array;
@@ -52,6 +52,9 @@ namespace Zyborg.IO
             {
                 if (index < 0)
                     throw new IndexOutOfRangeException($"slice index [{index}] must be non-negative");
+                if (index >= _upper)
+                    throw new IndexOutOfRangeException($"slice index [{index}] exceeds upper bound");
+
                 return _array[_lower + index];
             }
 
@@ -59,7 +62,10 @@ namespace Zyborg.IO
             {
                 if (index < 0)
                     throw new IndexOutOfRangeException($"slice index [{index}] must be non-negative");
-                _array[_lower + index] = value;
+                if (index >= _upper)
+                    throw new IndexOutOfRangeException($"slice index [{index}] exceeds upper bound");
+
+               _array[_lower + index] = value;
             }
         }
 
@@ -79,7 +85,9 @@ namespace Zyborg.IO
         {
             int max = Math.Min(this.Length, dst.Length);
 
-            // Properly handle copying overlapping regions
+            // Properly handle copying overlapping regions by
+            // either copying right to left or left to right
+
             if (this._array == dst._array && dst._lower > this._lower)
             {
                 for (int i = max - 1; i >= 0; --i)

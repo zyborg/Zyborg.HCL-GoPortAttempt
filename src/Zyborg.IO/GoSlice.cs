@@ -102,6 +102,11 @@ namespace Zyborg.IO
             return max;
         }
 
+        public int CopyFrom(slice<T> src)
+        {
+            return src.CopyTo(this);
+        }
+
         public slice<T> Append(params T[] items)
         {
             // TODO: naive implementation, optimize
@@ -127,9 +132,45 @@ namespace Zyborg.IO
             return s;
         }
 
+        public int IndexOf(T item) =>
+                _array == null ? -1 : Array.IndexOf(_array, item, _lower, _upper - _lower);
+
+        public T[] ToArray()
+        {
+            var span = _array == null ? default(Span<T>) : (Span<T>)_array;
+            return span.Slice(_lower, _upper - _lower).ToArray();
+        }
+
         public override string ToString()
         {
             return ToString(this);
+        }
+
+        /// Returns true if the elements are equal.
+        public bool Equals(slice<T> obj, IComparer<T> c = null)
+        {
+            // We short-circuit if the slices are exactly the same, for performance
+            if (this._array == obj._array && this._lower == obj._lower && this._upper == obj._upper)
+                return true;
+        
+            if (this.Length != obj.Length)
+                return false;
+
+            if (c == null)
+                c = Comparer<T>.Default;
+
+            for (var i = 0; i < _upper; i++)
+            {
+                if (0 != c.Compare(this._array[this._lower + i], obj._array[obj._lower + i]))
+                    return false;
+            }
+
+            return true;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj != null && (obj is slice<T>) && Equals((slice<T>)obj, null);
         }
         
         public static slice<T> Make(int length, int capacity = int.MinValue)

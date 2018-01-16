@@ -285,8 +285,30 @@ namespace Zyborg.IO
         /// value. No other validation is performed.
         public static (char r, int size) DecodeRune(this slice<byte> p)
         {
-            var (r, size) = NStack.Utf8.DecodeRune(p.ToArray());
-            return ((char)r, size);
+            // TOOD:
+            // This is a really roundabout way of producing the intended results
+            // but in a very inefficient manner -- should clean this up, what we
+            // do is use the byte-pointer/char-pointer version of UTF8.GetChars
+            // to decode up to 4 bytes but limit to only 1 character, then we
+            // reverse and re-encode 1 char to a byte array to resolve the byte size
+
+            var bytes = p.ToArray();
+            var chars = new char[4];
+            var maxBytes = bytes.Length;
+            if (maxBytes > 4)
+                maxBytes = 4;
+
+            unsafe
+            {
+                fixed (byte* pBytes = &bytes[0])
+                fixed (char* pChars = &chars[0])
+                {
+                    var charsCount = System.Text.Encoding.UTF8.GetChars(pBytes, maxBytes, pChars, 1);
+                }
+            }
+
+            bytes = System.Text.Encoding.UTF8.GetBytes(chars);
+            return (chars[0], bytes.Length);
 
             // n := len(p)
             // if n < 1 {

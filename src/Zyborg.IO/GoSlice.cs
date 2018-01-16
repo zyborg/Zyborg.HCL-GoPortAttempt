@@ -255,19 +255,19 @@ namespace Zyborg.IO
                     p[0] = bytes[0];
                     return 1;
                 case 2:
-                    p[0] = bytes[1];
-                    p[1] = bytes[0];
+                    p[0] = bytes[0]; // bytes[1];
+                    p[1] = bytes[1]; // bytes[0];
                     return 2;
                 case 3:
-                    p[0] = bytes[2];
-                    p[1] = bytes[1];
-                    p[2] = bytes[0];
+                    p[0] = bytes[0]; // bytes[2];
+                    p[1] = bytes[1]; // bytes[1];
+                    p[2] = bytes[2]; // bytes[0];
                     return 3;
                 case 4:
-                    p[0] = bytes[3];
-                    p[1] = bytes[2];
-                    p[2] = bytes[1];
-                    p[3] = bytes[0];
+                    p[0] = bytes[0]; // bytes[3];
+                    p[1] = bytes[1]; // bytes[2];
+                    p[2] = bytes[2]; // bytes[1];
+                    p[3] = bytes[3]; // bytes[0];
                     return 4;
                 default:
                     throw new Exception("failed to encode UTF8 character to slice"

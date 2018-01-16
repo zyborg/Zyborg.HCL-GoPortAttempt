@@ -313,7 +313,10 @@ namespace Zyborg.IO_tests
             var b = slice<byte>.Make(GoBuffer.UTFMax * NRune);
             var buf = new GoBuffer();
             var n = 0;
-            for (var r = (char)0; r < NRune; r++)
+
+            var zeroChar = (char)0;
+
+            for (var r = zeroChar; r < NRune; r++)
             {
                 var size = b.slice(n).EncodeRune(r);
                 var nbytes = buf.WriteRune(r);
@@ -329,7 +332,7 @@ namespace Zyborg.IO_tests
 
             var p = slice<byte>.Make(GoBuffer.UTFMax);
             // Read it back with ReadRune
-            for (var r = (char)0; r < NRune; r++)
+            for (var r = zeroChar; r < NRune; r++)
             {
                 var size = p.EncodeRune(r);
                 var (nr, nbytes, err) = buf.ReadRune();
@@ -353,18 +356,23 @@ namespace Zyborg.IO_tests
             Assert.ThrowsException<Exception>(() => buf.UnreadRune(),
                     "UnreadRune after ReadRune at EOF: got no error");
 
-            // // check not at EOF
-            // buf.Write(b)
-            // for r := rune(0); r < NRune; r++ {
-            //     r1, size, _ := buf.ReadRune()
-            //     if err := buf.UnreadRune(); err != nil {
-            //         t.Fatalf("UnreadRune(%U) got error %q", r, err)
-            //     }
-            //     r2, nbytes, err := buf.ReadRune()
-            //     if r1 != r2 || r1 != r || nbytes != size || err != nil {
-            //         t.Fatalf("ReadRune(%U) after UnreadRune got %U,%d not %U,%d (err=%s)", r, r2, nbytes, r, size, err)
-            //     }
-            // }
+            // check not at EOF
+            buf.Write(b);
+            for (var r = zeroChar; r < NRune; r++)
+            {
+                var (r1, size, _) = buf.ReadRune();
+
+                buf.UnreadRune();
+                var (r2, nbytes, err) = buf.ReadRune();
+                Assert.AreEqual(r1, r2,
+                        "ReadRune({0}) after UnreadRune got {1},{2} not {3},{4} (err={5})", r, r2, nbytes, r, size, err);
+                Assert.AreEqual(r1, r,
+                        "ReadRune({0}) after UnreadRune got {1},{2} not {3},{4} (err={5})", r, r2, nbytes, r, size, err);
+                Assert.AreEqual(size, nbytes,
+                        "ReadRune({0}) after UnreadRune got {1},{2} not {3},{4} (err={5})", r, r2, nbytes, r, size, err);
+                Assert.IsFalse(err,
+                        "ReadRune({0}) after UnreadRune got {1},{2} not {3},{4} (err={5})", r, r2, nbytes, r, size, err);
+            }
         }
 
     }

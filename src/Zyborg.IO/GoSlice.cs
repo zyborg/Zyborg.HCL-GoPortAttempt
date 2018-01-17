@@ -132,8 +132,18 @@ namespace Zyborg.IO
             return s;
         }
 
-        public int IndexOf(T item) =>
-                _array == null ? -1 : Array.IndexOf(_array, item, _lower, _upper - _lower);
+        public int IndexOf(T item)
+        {
+            var index = _array == null ? -1 : Array.IndexOf(_array, item, _lower, _upper - _lower);
+            if (index >= 0)
+                return index - _lower;
+            return index;
+        }
+
+        public slice<T> Repeat(int count)
+        {
+            return _array == null ? Empty : _array.Repeat(count);
+        }
 
         public T[] ToArray()
         {
@@ -159,7 +169,7 @@ namespace Zyborg.IO
             if (c == null)
                 c = Comparer<T>.Default;
 
-            for (var i = 0; i < _upper; i++)
+            for (int i = 0, len = Length; i < len; i++)
             {
                 if (0 != c.Compare(this._array[this._lower + i], obj._array[obj._lower + i]))
                     return false;
@@ -226,6 +236,15 @@ namespace Zyborg.IO
         public static slice<T> slice<T>(this slice<T> slice, int lower = 0, int upper = int.MinValue)
         {
             return new slice<T>(slice, lower, upper);
+        }
+
+        public static slice<T> Repeat<T>(this T[] array, int count)
+        {
+            var arrayLen = array.Length;
+            var newArray = new T[array.Length * count];
+            for (int i = 0; i < count; i++)
+                Array.Copy(array, 0, newArray, i * arrayLen, arrayLen);
+            return new slice<T>(newArray);
         }
 
         public static IEnumerable<(int index, T value)> Range<T>(this IEnumerable<T> e,

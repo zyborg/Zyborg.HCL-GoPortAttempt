@@ -3,23 +3,27 @@ namespace Zyborg.HCL.Token
     /// Pos describes an arbitrary source position
     /// including the file, line, and column location.
     /// A Position is valid if the line number is > 0.
-    public class Pos
+    public struct Pos
     {
+        public Pos(string f, int o, int l, int c)
+        {
+            Filename = f;
+            Offset = o;
+            Line = l;
+            Column = c;
+        }
+
         /// filename, if any
-        public string Filename
-        { get; set; }
+        public string Filename;
 
         /// offset, starting at 0
-        public int Offset
-        { get; set; }
+        public int Offset;
 
         /// line number, starting at 1
-        public int Line
-        { get; set; }
+        public int Line;
 
         /// column number, starting at 1 (character count)
-        public int Column
-        { get; set; }
+        public int Column;
 
         /// returns true if the position is valid.
         public bool IsValid => Line > 0;
@@ -42,7 +46,7 @@ namespace Zyborg.HCL.Token
             var s = this.Filename;
             if (this.IsValid)
             {
-                if (s != "")
+                if (!string.IsNullOrEmpty(s))
                 {
                     s += ":";
                 }

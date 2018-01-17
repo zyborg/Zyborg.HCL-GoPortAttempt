@@ -375,5 +375,321 @@ namespace Zyborg.IO_tests
             }
         }
 
+        [TestMethod]
+        public void TestNext()
+        {
+            var b = slice<byte>.From(0, 1, 2, 3, 4);
+            var tmp = slice<byte>.Make(5);
+            for (var i = 0; i <= 5; i++)
+            {
+                for (var j = i; j <= 5; j++)
+                {
+                    for (var k = 0; k <= 6; k++)
+                    {
+                        // 0 <= i <= j <= 5; 0 <= k <= 6
+                        // Check that if we start with a buffer
+                        // of length j at offset i and ask for
+                        // Next(k), we get the right bytes.
+                        var buf = GoBuffer.NewBuffer(b.slice(0, j));
+                        var (n, _) = buf.Read(tmp.slice(0, i));
+                        Assert.AreEqual(i, n);
+                        var bb = buf.Next(k);
+                        var want = k;
+                        if (want > j - i)
+                            want = j - i;
+                        Assert.AreEqual(want, bb.Length);
+                        foreach (var (l, v) in bb.Range())
+                        {
+                            Assert.AreEqual((byte)(l + i), v);
+                        }
+                    }
+                }
+            }
+        }
+
+        private class ReadBytesTest
+        {
+            public string buffer;
+            public byte delim;
+            public slice<string> expected;
+            public bool eof;
+            public ReadBytesTest(string b, byte d, slice<string> x, bool e)
+            {
+                buffer = b;
+                delim = d;
+                expected = x;
+                eof = e;
+            }
+        }
+
+        private ReadBytesTest[] _readBytesTests = new[]
+        {
+            new ReadBytesTest("", (byte)0, slice<string>.From(""), true),
+            new ReadBytesTest("a\x00", (byte)0, slice<string>.From("a\x00"), false),
+            new ReadBytesTest("abbbaaaba", (byte)'b', slice<string>.From("ab", "b", "b", "aaab"), false),
+            new ReadBytesTest("hello\x01world", (byte)1, slice<string>.From("hello\x01"), false),
+            new ReadBytesTest("foo\nbar", (byte)0, slice<string>.From("foo\nbar"), true),
+            new ReadBytesTest("alpha\nbeta\ngamma\n", (byte)'\n', slice<string>.From("alpha\n", "beta\n", "gamma\n"), false),
+            new ReadBytesTest("alpha\nbeta\ngamma", (byte)'\n', slice<string>.From("alpha\n", "beta\n", "gamma"), true),
+        };
+
+        [TestMethod]
+        public void TestReadBytes()
+        {
+            foreach (var test in _readBytesTests)
+            {
+                var buf = GoBuffer.NewBufferString(test.buffer);
+                bool eof = false;
+
+                foreach (var expected in test.expected)
+                {
+                    slice<byte> bytes;
+                    (bytes, eof) = buf.ReadBytes(test.delim);
+                    Assert.AreEqual(expected, bytes.AsString());
+                    if (eof)
+                        break;
+                }
+                Assert.AreEqual(test.eof, eof);
+            }
+        }
+
+        [TestMethod]
+        public void TestReadString()
+        {
+            foreach (var test in _readBytesTests)
+            {
+                var buf = GoBuffer.NewBufferString(test.buffer);
+                bool eof = false;
+
+                foreach (var expected in test.expected)
+                {
+                    string s;
+                    (s, eof) = buf.ReadString(test.delim);
+                    Assert.AreEqual(expected, s);
+                    if (eof)
+                        break;
+                }
+                Assert.AreEqual(test.eof, eof);
+            }
+        }
+
+        public const int testing_B_N = 10000;
+
+        [TestMethod]
+        public void BenchmarkReadString()
+        {
+            var n = 32 << 10;
+
+            var data = slice<byte>.Make(n);
+            data[n - 1] = (byte)'x';
+
+          //b.SetBytes(int64(n))
+
+            for (var i = 0; i < testing_B_N; i++)
+            {
+                var buf = GoBuffer.NewBuffer(data);
+                var (_, eof) = buf.ReadString((byte)'x');
+                Assert.IsFalse(eof);
+            }
+        }
+
+        [TestMethod]
+        public void TestGrow()
+        {
+            var x = slice<byte>.From((byte)'x');
+            var y = slice<byte>.From((byte)'y');
+            var tmp = slice<byte>.Make(72);
+
+            foreach (var startLen in new []{ 0, 100, 1000, 10000, 100000 })
+            {
+                var xBytes = x.Repeat(startLen);
+                foreach (var growLen in new [] { 0, 100, 1000, 10000, 100000 })
+                {
+                    var buf = GoBuffer.NewBuffer(xBytes);
+                    // If we read, this affects buf.off, which is good to test.
+                    var (readBytes, _) = buf.Read(tmp);
+                    buf.Grow(growLen);
+                    var yBytes = y.Repeat(growLen);
+                    // Check no allocation occurs in write, as long as we're single-threaded.
+                    // var m1, m2 runtime.MemStats
+                    // runtime.ReadMemStats(&m1)
+                    buf.Write(yBytes);
+                    //runtime.ReadMemStats(&m2)
+                    // if runtime.GOMAXPROCS(-1) == 1 && m1.Mallocs != m2.Mallocs {
+                    //     t.Errorf("allocation occurred during write")
+                    // }
+                    // Check that buffer has correct data.
+                    Assert.AreEqual(xBytes.slice(readBytes), buf.Bytes().slice(0, startLen - readBytes),
+                            "bad initial data at {0} {1}", startLen, growLen);
+
+                    Assert.AreEqual(yBytes, buf.Bytes().slice(startLen - readBytes, startLen - readBytes + growLen),
+                            "bad written data at {0} {1}", startLen, growLen);
+                }
+            }
+        }
+
+        // Was a bug: used to give EOF reading empty slice at EOF.
+        [TestMethod]
+        public void TestReadEmptyAtEOF()
+        {
+            var b = new GoBuffer();
+            var slice = slice<byte>.Make(0);
+            var (n, eof) = b.Read(slice);
+            Assert.IsFalse(eof);
+            Assert.AreEqual(0, n, "wrong count; got {0} want 0", n);
+        }
+
+        [TestMethod]
+        public void TestUnreadByte()
+        {
+            var b = new GoBuffer();
+
+            // check at EOF
+            Assert.ThrowsException<Exception>(() => b.UnreadByte());
+            // if err := b.UnreadByte(); err == nil {
+            //     t.Fatal("UnreadByte at EOF: got no error")
+            // }
+            var (_, eof) = b.ReadByteOrEof();
+            Assert.IsTrue(eof, "ReadByte at EOF: got no error");
+            // if _, err := b.ReadByte(); err == nil {
+            //     t.Fatal("ReadByte at EOF: got no error")
+            // }
+            Assert.ThrowsException<Exception>(() => b.UnreadByte());
+            // if err := b.UnreadByte(); err == nil {
+            //     t.Fatal("UnreadByte after ReadByte at EOF: got no error")
+            // }
+
+            // check not at EOF
+            b.WriteString("abcdefghijklmnopqrstuvwxyz");
+
+            // after unsuccessful read
+            var (n, err) = b.Read(slice<byte>.Empty);
+            Assert.AreEqual(0, n);
+            Assert.IsFalse(err);
+            // if n, err := b.Read(nil); n != 0 || err != nil {
+            //     t.Fatalf("Read(nil) = %d,%v; want 0,nil", n, err)
+            // }
+            Assert.ThrowsException<Exception>(() => b.UnreadByte());
+            // if err := b.UnreadByte(); err == nil {
+            //     t.Fatal("UnreadByte after Read(nil): got no error")
+            // }
+
+            // after successful read
+            (_, err) = b.ReadBytes((byte)'m');
+            Assert.IsFalse(err);
+            // if _, err := b.ReadBytes('m'); err != nil {
+            //     t.Fatalf("ReadBytes: %v", err)
+            // }
+            b.UnreadByte();
+            // if err := b.UnreadByte(); err != nil {
+            //     t.Fatalf("UnreadByte: %v", err)
+            // }
+            var c = b.ReadByte();
+            // c, err := b.ReadByte();
+            // if err != nil {
+            //     t.Fatalf("ReadByte: %v", err)
+            // }
+            Assert.AreEqual('m', c, "ReadByte = {0}; want {1}", c, 'm');
+            // }
+        }
+
+        // Tests that we occasionally compact. Issue 5154.
+        [TestMethod]
+        public void TestBufferGrowth()
+        {
+            var b = new GoBuffer();
+            var buf = slice<byte>.Make(1024);
+            b.Write(buf.slice(0, 1));
+            int cap0 = 0;
+            for (var i = 0; i < 5 << 10; i++)
+            {
+                b.Write(buf);
+                b.Read(buf);
+                if (i == 0)
+                    cap0 = b.Cap();
+            }
+            var cap1 = b.Cap();
+            // (*Buffer).grow allows for 2x capacity slop before sliding,
+            // so set our error threshold at 3x.
+            Assert.IsFalse(cap0 > cap0 * 3,
+                    "buffer cap = {0}; too big (grew from {1})", cap1, cap0);
+            // if (cap1 > cap0 * 3) {
+            //     t.Errorf("buffer cap = %d; too big (grew from %d)", cap1, cap0)
+            // }
+        }
+
+        // // Test that tryGrowByReslice is inlined.
+        // // Only execute on "linux-amd64" builder in order to avoid breakage.
+        // func TestTryGrowByResliceInlined(t *testing.T) {
+        //     targetBuilder := "linux-amd64"
+        //     if testenv.Builder() != targetBuilder {
+        //         t.Skipf("%q gets executed on %q builder only", t.Name(), targetBuilder)
+        //     }
+        //     t.Parallel()
+        //     goBin := testenv.GoToolPath(t)
+        //     out, err := exec.Command(goBin, "tool", "nm", goBin).CombinedOutput()
+        //     if err != nil {
+        //         t.Fatalf("go tool nm: %v: %s", err, out)
+        //     }
+        //     // Verify this doesn't exist:
+        //     sym := "bytes.(*Buffer).tryGrowByReslice"
+        //     if Contains(out, []byte(sym)) {
+        //         t.Errorf("found symbol %q in cmd/go, but should be inlined", sym)
+        //     }
+        // }
+
+        // func BenchmarkWriteByte(b *testing.B) {
+        //     const n = 4 << 10
+        //     b.SetBytes(n)
+        //     buf := NewBuffer(make([]byte, n))
+        //     for i := 0; i < b.N; i++ {
+        //         buf.Reset()
+        //         for i := 0; i < n; i++ {
+        //             buf.WriteByte('x')
+        //         }
+        //     }
+        // }
+
+        // func BenchmarkWriteRune(b *testing.B) {
+        //     const n = 4 << 10
+        //     const r = '☺'
+        //     b.SetBytes(int64(n * utf8.RuneLen(r)))
+        //     buf := NewBuffer(make([]byte, n*utf8.UTFMax))
+        //     for i := 0; i < b.N; i++ {
+        //         buf.Reset()
+        //         for i := 0; i < n; i++ {
+        //             buf.WriteRune(r)
+        //         }
+        //     }
+        // }
+
+        // // From Issue 5154.
+        // func BenchmarkBufferNotEmptyWriteRead(b *testing.B) {
+        //     buf := make([]byte, 1024)
+        //     for i := 0; i < b.N; i++ {
+        //         var b Buffer
+        //         b.Write(buf[0:1])
+        //         for i := 0; i < 5<<10; i++ {
+        //             b.Write(buf)
+        //             b.Read(buf)
+        //         }
+        //     }
+        // }
+
+        // // Check that we don't compact too often. From Issue 5154.
+        // func BenchmarkBufferFullSmallReads(b *testing.B) {
+        //     buf := make([]byte, 1024)
+        //     for i := 0; i < b.N; i++ {
+        //         var b Buffer
+        //         b.Write(buf)
+        //         for b.Len()+20 < b.Cap() {
+        //             b.Write(buf[:10])
+        //         }
+        //         for i := 0; i < 5<<10; i++ {
+        //             b.Read(buf[:1])
+        //             b.Write(buf[:1])
+        //         }
+        //     }
+        // }
     }
 }

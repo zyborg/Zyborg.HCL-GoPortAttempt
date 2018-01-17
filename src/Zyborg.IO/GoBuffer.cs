@@ -478,20 +478,20 @@ namespace Zyborg.IO
         /// it returns the data read before the error and the error itself (often io.EOF).
         /// ReadBytes returns err != nil if and only if the returned data does not end in
         /// delim.
-        public (slice<byte> line, bool eof) Readbytes(byte delim)
+        public (slice<byte> line, bool eof) ReadBytes(byte delim)
         {
             var line = new slice<byte>();
             var (slice, eof) = ReadSlice(delim);
             // return a copy of slice. The buffer's backing array may
             // be overwritten by later calls.
-            line.AppendAll(slice);
+            line = line.AppendAll(slice);
             return (line, eof);
         }
 
         /// readSlice is like ReadBytes but returns a reference to internal buffer data.
         private (slice<byte> line, bool eof) ReadSlice(byte delim)
         {
-            var line = new slice<byte>();
+            var line = slice<byte>.Empty;
             var eof = false;
 
             var i = _buf.slice(_off).IndexOf(delim);

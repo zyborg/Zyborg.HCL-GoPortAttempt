@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Zyborg.HCL\Zyborg.HCL.csproj" />
+    <ProjectReference Include="..\..\src\Zyborg.IO\Zyborg.IO.csproj" />
   </ItemGroup>
 
 </Project>

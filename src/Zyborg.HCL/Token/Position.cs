@@ -1,4 +1,4 @@
-namespace Zyborg.HCL.Token
+namespace Zyborg.HCL.token
 {
     /// Pos describes an arbitrary source position
     /// including the file, line, and column location.

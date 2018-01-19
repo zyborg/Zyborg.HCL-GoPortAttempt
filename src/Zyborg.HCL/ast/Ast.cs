@@ -1,5 +1,5 @@
 using System;
-using Zyborg.HCL.Token;
+using Zyborg.HCL.token;
 using Zyborg.IO;
 
 namespace Zyborg.HCL.ast
@@ -206,7 +206,7 @@ namespace Zyborg.HCL.ast
     /// ObjectKeys are either an identifier or of type string.
     public class ObjectKey : INode
     {
-        public Token.Token Token;
+        public Token Token;
 
         public Pos Pos()
         {
@@ -234,7 +234,7 @@ namespace Zyborg.HCL.ast
     /// token.NUMBER, token.FLOAT, token.BOOL and token.STRING
     public class LiteralType : INode
     {
-        public Token.Token Token;
+        public Token Token;
 
         // comment types, only used when in a list
         public CommentGroup LeadComment;

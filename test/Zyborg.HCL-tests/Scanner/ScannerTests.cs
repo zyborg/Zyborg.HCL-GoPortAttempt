@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zyborg.HCL.Token;
+using Zyborg.HCL.token;
 using Zyborg.IO;
 
-namespace Zyborg.HCL.Scanner
+namespace Zyborg.HCL.scanner
 {
     [TestClass]
     public class ScannerTests

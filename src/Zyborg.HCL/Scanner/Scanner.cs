@@ -1,9 +1,9 @@
 using System;
 using System.Text.RegularExpressions;
-using Zyborg.HCL.Token;
+using Zyborg.HCL.token;
 using Zyborg.IO;
 
-namespace Zyborg.HCL.Scanner
+namespace Zyborg.HCL.scanner
 {
     /// Scanner defines a lexical scanner
     public class Scanner
@@ -125,7 +125,7 @@ namespace Zyborg.HCL.Scanner
         }
 
         /// Scan scans the next token and returns the token.
-        public Token.Token Scan()
+        public Token Scan()
         {
             var ch = Next();
 
@@ -247,7 +247,7 @@ namespace Zyborg.HCL.Scanner
                 tokenText = _src.slice(_tokStart, _tokEnd).AsString();
             _tokStart = _tokEnd; // ensure idempotency of tokenText() call
 
-            return new Token.Token
+            return new Token
             {
                 Type = tok,
                 Pos =  TokPos,

@@ -1,7 +1,7 @@
 using DeepEqual.Syntax;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Zyborg.HCL.Token
+namespace Zyborg.HCL.token
 {
     [TestClass]
     public class TokenTests

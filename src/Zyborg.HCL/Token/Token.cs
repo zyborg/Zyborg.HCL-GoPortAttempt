@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Zyborg.HCL.Token
+namespace Zyborg.HCL.token
 {
     public enum TokenType
     {
@@ -161,7 +161,7 @@ namespace Zyborg.HCL.Token
                     // Determine the Unquote method to use. If it came from JSON,
                     // then we need to use the built-in unquote since we have to
                     // escape interpolations there.
-                    Func<string, string> f = StrConv.StrConv.Unquote;
+                    Func<string, string> f = strconv.StrConv.Unquote;
                     if (this.JSON)
                     {
                         f = StdUnquote;

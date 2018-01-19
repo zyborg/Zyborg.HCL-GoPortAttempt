@@ -2,7 +2,7 @@ using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zyborg.HCL;
 
-namespace Zyborg.HCL.StrConv
+namespace Zyborg.HCL.strconv
 {
     class QuoteTest
     {

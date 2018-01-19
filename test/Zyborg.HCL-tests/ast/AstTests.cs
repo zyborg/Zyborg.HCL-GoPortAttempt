@@ -4,7 +4,7 @@ using DeepEqual;
 using DeepEqual.Syntax;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
-using Zyborg.HCL.Token;
+using Zyborg.HCL.token;
 using Zyborg.IO;
 
 namespace Zyborg.HCL.ast
@@ -25,7 +25,7 @@ namespace Zyborg.HCL.ast
                             Keys = slice<ObjectKey>.From(
                                 new ObjectKey
                                 {
-                                    Token = new Token.Token
+                                    Token = new Token
                                     {
                                         Type = TokenType.STRING,
                                         Text = @"""foo"""
@@ -47,14 +47,14 @@ namespace Zyborg.HCL.ast
                         new ObjectItem
                         {
                             Keys = slice<ObjectKey>.From(
-                                new ObjectKey { Token = new Token.Token { Type = TokenType.STRING, Text = @"""foo""" }},
-                                new ObjectKey { Token = new Token.Token { Type = TokenType.STRING, Text = @"""bar""" }}
+                                new ObjectKey { Token = new Token { Type = TokenType.STRING, Text = @"""foo""" }},
+                                new ObjectKey { Token = new Token { Type = TokenType.STRING, Text = @"""bar""" }}
                             )
                         },
                         new ObjectItem
                         {
                             Keys = slice<ObjectKey>.From(
-                                new ObjectKey { Token = new Token.Token { Type = TokenType.STRING, Text = @"""baz""" }}
+                                new ObjectKey { Token = new Token { Type = TokenType.STRING, Text = @"""baz""" }}
                             )
                         }
                     ),
@@ -62,7 +62,7 @@ namespace Zyborg.HCL.ast
                         new ObjectItem
                         {
                             Keys = slice<ObjectKey>.From(
-                                new ObjectKey { Token = new Token.Token { Type = TokenType.STRING, Text = @"""bar""" }}
+                                new ObjectKey { Token = new Token { Type = TokenType.STRING, Text = @"""bar""" }}
                             )
                         }
                     )
@@ -88,15 +88,15 @@ namespace Zyborg.HCL.ast
                 new ObjectItem
                 {
                     Keys = slice<ObjectKey>.From(
-                        new ObjectKey { Token = new Token.Token { Type = TokenType.STRING, Text = @"""foo""" } },
-                        new ObjectKey { Token = new Token.Token { Type = TokenType.STRING, Text = @"""bar""" } }
+                        new ObjectKey { Token = new Token { Type = TokenType.STRING, Text = @"""foo""" } },
+                        new ObjectKey { Token = new Token { Type = TokenType.STRING, Text = @"""bar""" } }
                     ),
-                    Val = new LiteralType { Token = new Token.Token { Type = TokenType.STRING, Text = @"""example""" } },
+                    Val = new LiteralType { Token = new Token { Type = TokenType.STRING, Text = @"""example""" } },
                 },
                 new ObjectItem
                 {
                     Keys = slice<ObjectKey>.From(
-                        new ObjectKey { Token = new Token.Token { Type = TokenType.STRING, Text= @"""baz""" } }
+                        new ObjectKey { Token = new Token { Type = TokenType.STRING, Text= @"""baz""" } }
                     ),
                 }
             );
@@ -134,13 +134,13 @@ namespace Zyborg.HCL.ast
                 new ObjectItem
                 {
                     Keys = slice.From(
-                        new ObjectKey { Token = new Token.Token { Type = TokenType.STRING, Text = @"""foo""" } }
+                        new ObjectKey { Token = new Token { Type = TokenType.STRING, Text = @"""foo""" } }
                     ),
                 },
                 new ObjectItem
                 {
                     Keys = slice.From(
-                        new ObjectKey { Token = new Token.Token { Type = TokenType.STRING, Text = @"""bar""" } }
+                        new ObjectKey { Token = new Token { Type = TokenType.STRING, Text = @"""bar""" } }
                     ),
                 }
             );
@@ -177,14 +177,14 @@ namespace Zyborg.HCL.ast
                 new ObjectItem
                 {
                     Keys = slice.From(
-                        new ObjectKey { Token = new Token.Token { Type = TokenType.STRING, Text = @"""foo""" } },
-                        new ObjectKey { Token = new Token.Token { Type = TokenType.STRING, Text = @"""bar""" } }
+                        new ObjectKey { Token = new Token { Type = TokenType.STRING, Text = @"""foo""" } },
+                        new ObjectKey { Token = new Token { Type = TokenType.STRING, Text = @"""bar""" } }
                     ),
                 },
                 new ObjectItem
                 {
                     Keys = slice.From(
-                        new ObjectKey { Token = new Token.Token { Type = TokenType.STRING, Text = @"""baz""" } }
+                        new ObjectKey { Token = new Token { Type = TokenType.STRING, Text = @"""baz""" } }
                     ),
                 }
             );

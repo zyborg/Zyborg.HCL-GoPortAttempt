@@ -115,7 +115,7 @@ namespace Zyborg.IO_tests
                 if (n == 0)
                     break;
                 Assert.IsFalse(eof);
-                s = s.AsByteSlice().slice(n).AsString();
+                s = s.AsByteSlice().Slice(n).AsString();
                 Check(buf, s);
             }
 
@@ -137,24 +137,24 @@ namespace Zyborg.IO_tests
                 buf.Truncate(0);
                 Check(buf, "");
 
-                var n = buf.Write(data.AsByteSlice().slice(0, 1));
+                var n = buf.Write(data.AsByteSlice().Slice(0, 1));
                 Assert.AreEqual(1, n, $"wrote 1 byte, but n == {n}");
                 Check(buf, "a");
 
                 buf.WriteByte(data.AsByteSlice()[1]);
                 Check(buf, "ab");
 
-                n = buf.Write(data.AsByteSlice().slice(2, 26));
+                n = buf.Write(data.AsByteSlice().Slice(2, 26));
                 Assert.AreEqual(24, n, $"wrote 25 bytes, but n == {n}");
-                Check(buf, data.AsByteSlice().slice(0, 26).AsString());
+                Check(buf, data.AsByteSlice().Slice(0, 26).AsString());
 
                 buf.Truncate(26);
-                Check(buf, data.AsByteSlice().slice(0, 26).AsString());
+                Check(buf, data.AsByteSlice().Slice(0, 26).AsString());
 
                 buf.Truncate(20);
-                Check(buf, data.AsByteSlice().slice(0, 20).AsString());
+                Check(buf, data.AsByteSlice().Slice(0, 20).AsString());
 
-                Empty(buf, data.AsByteSlice().slice(0, 20).AsString(), slice<byte>.Make(5));
+                Empty(buf, data.AsByteSlice().Slice(0, 20).AsString(), slice<byte>.Make(5));
                 Empty(buf, "", slice<byte>.Make(100));
 
                 buf.WriteByte(data.AsByteSlice()[1]);
@@ -206,7 +206,7 @@ namespace Zyborg.IO_tests
             
             for (var i = 3; i < 30; i += 3)
             {
-                var s = FillString(buf, "", 5, data.AsByteSlice().slice(0, data.Length / i).AsString());
+                var s = FillString(buf, "", 5, data.AsByteSlice().Slice(0, data.Length / i).AsString());
                 Empty(buf, s, slice<byte>.Make(data.Length));
             }
             Check(buf, "");
@@ -219,7 +219,7 @@ namespace Zyborg.IO_tests
 
             for (var i = 3; i < 30; i += 3)
             {
-                var s = FillBytes(buf, "", 5, testBytes.slice(0, testBytes.Length / i));
+                var s = FillBytes(buf, "", 5, testBytes.Slice(0, testBytes.Length / i));
                 Empty(buf, s, slice<byte>.Make(data.Length));
             }
             Check(buf, "");
@@ -238,17 +238,17 @@ namespace Zyborg.IO_tests
 
                 if (i % 2 == 0)
                 {
-                    s = FillString(buf, s, 1, data.AsByteSlice().slice(0, wlen).AsString());
+                    s = FillString(buf, s, 1, data.AsByteSlice().Slice(0, wlen).AsString());
                 }
                 else
                 {
-                    s = FillBytes(buf, s, 1, testBytes.slice(0, wlen));
+                    s = FillBytes(buf, s, 1, testBytes.Slice(0, wlen));
                 }
 
                 var rlen = rng.Next(data.Length);
                 var fub = slice<byte>.Make(rlen);
                 var (n, _) = buf.Read(fub);
-                s = s.AsByteSlice().slice(n).AsString();
+                s = s.AsByteSlice().Slice(n).AsString();
             }
             Empty(buf, s, slice<byte>.Make(buf.Len()));
         }
@@ -284,7 +284,7 @@ namespace Zyborg.IO_tests
             
             for (var i = 3; i < 30; i += 3)
             {
-                var s = FillBytes(buf, "", 5, testBytes.slice(0, testBytes.Length / i));
+                var s = FillBytes(buf, "", 5, testBytes.Slice(0, testBytes.Length / i));
                 var b = new GoBuffer();
                 b.ReadFrom(buf);
                 Empty(b, s, slice<byte>.Make(data.Length));
@@ -297,7 +297,7 @@ namespace Zyborg.IO_tests
             var buf = new GoBuffer();
             for (var i = 3; i < 30; i += 3)
             {
-                var s = FillBytes(buf, "", 5, testBytes.slice(0, testBytes.Length / i));
+                var s = FillBytes(buf, "", 5, testBytes.Slice(0, testBytes.Length / i));
                 var b = new GoBuffer();
                 buf.WriteTo(b);
                 Empty(b, s, slice<byte>.Make(data.Length));
@@ -318,13 +318,13 @@ namespace Zyborg.IO_tests
 
             for (var r = zeroChar; r < NRune; r++)
             {
-                var size = b.slice(n).EncodeRune(r);
+                var size = b.Slice(n).EncodeRune(r);
                 var nbytes = buf.WriteRune(r);
                 Assert.AreEqual(size, nbytes, "WriteRune({0}) expected {1}, got {2}",
                         r, size, nbytes);
                 n += size;
             }
-            b = b.slice(0, n);
+            b = b.Slice(0, n);
 
             // Check the resulting bytes
             Assert.IsTrue(b.Equals(buf.Bytes()),
@@ -390,8 +390,8 @@ namespace Zyborg.IO_tests
                         // Check that if we start with a buffer
                         // of length j at offset i and ask for
                         // Next(k), we get the right bytes.
-                        var buf = GoBuffer.NewBuffer(b.slice(0, j));
-                        var (n, _) = buf.Read(tmp.slice(0, i));
+                        var buf = GoBuffer.NewBuffer(b.Slice(0, j));
+                        var (n, _) = buf.Read(tmp.Slice(0, i));
                         Assert.AreEqual(i, n);
                         var bb = buf.Next(k);
                         var want = k;
@@ -519,10 +519,10 @@ namespace Zyborg.IO_tests
                     //     t.Errorf("allocation occurred during write")
                     // }
                     // Check that buffer has correct data.
-                    Assert.AreEqual(xBytes.slice(readBytes), buf.Bytes().slice(0, startLen - readBytes),
+                    Assert.AreEqual(xBytes.Slice(readBytes), buf.Bytes().Slice(0, startLen - readBytes),
                             "bad initial data at {0} {1}", startLen, growLen);
 
-                    Assert.AreEqual(yBytes, buf.Bytes().slice(startLen - readBytes, startLen - readBytes + growLen),
+                    Assert.AreEqual(yBytes, (object)buf.Bytes().Slice(startLen - readBytes, startLen - readBytes + growLen),
                             "bad written data at {0} {1}", startLen, growLen);
                 }
             }
@@ -599,7 +599,7 @@ namespace Zyborg.IO_tests
         {
             var b = new GoBuffer();
             var buf = slice<byte>.Make(1024);
-            b.Write(buf.slice(0, 1));
+            b.Write(buf.Slice(0, 1));
             int cap0 = 0;
             for (var i = 0; i < 5 << 10; i++)
             {

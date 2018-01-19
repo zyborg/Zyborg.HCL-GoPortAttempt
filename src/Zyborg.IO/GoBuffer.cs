@@ -32,7 +32,7 @@ namespace Zyborg.IO
         /// only until the next call to a method like Read, Write, Reset, or Truncate).
         /// The slice aliases the buffer content at least until the next buffer modification,
         /// so immediate changes to the slice will affect the result of future reads.
-        public slice<byte> Bytes() => _buf.slice(_off);
+        public slice<byte> Bytes() => _buf.Slice(_off);
 
         /// String returns the contents of the unread portion of the buffer
         /// as a string. If the Buffer is a nil pointer, it returns "&lt;nil&gt;".
@@ -59,7 +59,7 @@ namespace Zyborg.IO
             if (n < 0 || n > Len())
                 throw new Exception("bytes.Buffer: truncation out of range");
 
-            _buf = _buf.slice(0, _off + n);
+            _buf = _buf.Slice(0, _off + n);
         }
 
         /// Reset resets the buffer to be empty,
@@ -67,7 +67,7 @@ namespace Zyborg.IO
         /// Reset is the same as Truncate(0).
         public void Reset()
         {
-            _buf = _buf.slice(upper: 0);
+            _buf = _buf.Slice(upper: 0);
             _off = 0;
             _lastRead = ReadOp.opInvalid;
         }
@@ -80,7 +80,7 @@ namespace Zyborg.IO
             var l = _buf.Length;
             if (l + n <= _buf.Capacity)
             {
-                _buf = _buf.slice(upper: l + n);
+                _buf = _buf.Slice(upper: l + n);
                 return (l, true);
             }
             return (0, false);
@@ -104,7 +104,7 @@ namespace Zyborg.IO
             // Check if we can make use of bootstrap array.
             if (_buf.IsEmpty && n <= _bootstrap.Length)
             {
-                _buf = _bootstrap.slice(upper: n);
+                _buf = _bootstrap.Slice(upper: n);
                 return 0;
             }
             if (m + n <= _buf.Capacity / 2)
@@ -114,18 +114,18 @@ namespace Zyborg.IO
                 // we instead let capacity get twice as large so we
                 // don't spend all our time copying.
                 //copy(b.buf[:], b.buf[b.off:])
-                _buf.slice().CopyFrom(_buf.slice(_off));
+                _buf.Slice().CopyFrom(_buf.Slice(_off));
             }
             else
             {
                 // Not enough space anywhere, we need to allocate.
                 var buf = MakeSlice(2 * _buf.Capacity + n);
-                buf.CopyFrom(_buf.slice(_off));
+                buf.CopyFrom(_buf.Slice(_off));
                 _buf = buf;
             }
             // Restore b.off and len(b.buf).
             _off = 0;
-            _buf = _buf.slice(upper: m + n);
+            _buf = _buf.Slice(upper: m + n);
             return m;
         }
 
@@ -140,7 +140,7 @@ namespace Zyborg.IO
                 throw new Exception("bytes.Buffer.Grow: negative count");
 
             var m = GrowInternal(n);
-            _buf = _buf.slice(0, m);
+            _buf = _buf.Slice(0, m);
         }
 
         /// Write appends the contents of p to the buffer, growing the buffer as
@@ -153,7 +153,7 @@ namespace Zyborg.IO
             if (!ok)
                 m = GrowInternal(p.Length);
 
-            return _buf.slice(m).CopyFrom(p);
+            return _buf.Slice(m).CopyFrom(p);
         }
 
         /// WriteString appends the contents of s to the buffer, growing the buffer as
@@ -165,7 +165,7 @@ namespace Zyborg.IO
             var (m, ok) = TryGrowByReslice(s.Length);
             if (!ok)
                 m = GrowInternal(s.Length);
-            return _buf.slice(m).CopyFrom(Encoding.UTF8.GetBytes(s).slice());
+            return _buf.Slice(m).CopyFrom(Encoding.UTF8.GetBytes(s).Slice());
         }
 
         /// MinRead is the minimum slice size passed to a Read call by
@@ -202,8 +202,8 @@ namespace Zyborg.IO
                         // double buffer capacity
                         newBuf = MakeSlice(2 * _buf.Capacity + MinRead);
                     }
-                    newBuf.CopyFrom(_buf.slice(_off));
-                    _buf = newBuf.slice(upper: _buf.Length - _off);
+                    newBuf.CopyFrom(_buf.Slice(_off));
+                    _buf = newBuf.Slice(upper: _buf.Length - _off);
                     _off = 0;
                 }
                 
@@ -211,7 +211,7 @@ namespace Zyborg.IO
                 var m = r.Read(bytes, 0, bytes.Length);
                 if (m > 0)
                 {
-                    var slice = bytes.slice(upper: m);
+                    var slice = bytes.Slice(upper: m);
                     _buf = _buf.AppendAll(slice);
 
                     n += (long)m;
@@ -271,7 +271,7 @@ namespace Zyborg.IO
             {
                 var nBytes = this.Len();
                 
-                var arr = _buf.slice(_off).ToArray();
+                var arr = _buf.Slice(_off).ToArray();
                 w.Write(arr, 0, arr.Length);
                 var m = arr.Length;
                 if (m > nBytes)
@@ -335,8 +335,8 @@ namespace Zyborg.IO
                 m = GrowInternal(UTFMax);
             }
 
-            n = _buf.slice(m, m + UTFMax).EncodeRune(r);
-            _buf = _buf.slice(upper: m + n);
+            n = _buf.Slice(m, m + UTFMax).EncodeRune(r);
+            _buf = _buf.Slice(upper: m + n);
             return n;
         }
 
@@ -357,7 +357,7 @@ namespace Zyborg.IO
                     return (n, false);
                 return (0, eof: true);
             }
-            n = p.CopyFrom(_buf.slice(_off));
+            n = p.CopyFrom(_buf.Slice(_off));
             _off += n;
             if (n > 0)
                 _lastRead = ReadOp.opRead;
@@ -375,7 +375,7 @@ namespace Zyborg.IO
             if (n > m) {
                 n = m;
             }
-            var data = _buf.slice(_off, _off + n);
+            var data = _buf.Slice(_off, _off + n);
             _off += n;
             if (n > 0)
                 _lastRead = ReadOp.opRead;
@@ -435,7 +435,7 @@ namespace Zyborg.IO
                 _lastRead = ReadOp.opReadRune1;
                 return ((char)c, 1, false);
             }
-            var (r, n) = _buf.slice(_off).DecodeRune();
+            var (r, n) = _buf.Slice(_off).DecodeRune();
             _off += n;
             _lastRead = (ReadOp)n;
             return (r, n, false);
@@ -494,14 +494,14 @@ namespace Zyborg.IO
             var line = slice<byte>.Empty;
             var eof = false;
 
-            var i = _buf.slice(_off).IndexOf(delim);
+            var i = _buf.Slice(_off).IndexOf(delim);
             var end = _off + i + 1;
             if (i < 0)
             {
                 end = _buf.Length;
                 eof = true;
             }
-            line = _buf.slice(_off, end);
+            line = _buf.Slice(_off, end);
             _off = end;
             _lastRead = ReadOp.opRead;
             return (line, eof);
@@ -546,7 +546,7 @@ namespace Zyborg.IO
         // }        
         public static GoBuffer NewBufferString(string s)
         {
-            return new GoBuffer { _buf = Encoding.UTF8.GetBytes(s).slice() };
+            return new GoBuffer { _buf = Encoding.UTF8.GetBytes(s).Slice() };
         }
 
         // The following implement the Stream base class semantics
@@ -569,7 +569,7 @@ namespace Zyborg.IO
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            var slice = buffer.slice(offset, offset + count);
+            var slice = buffer.Slice(offset, offset + count);
             var (n, eof) = this.Read(slice);
 
             return n;
@@ -577,7 +577,7 @@ namespace Zyborg.IO
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            var slice = buffer.slice(offset, offset + count);
+            var slice = buffer.Slice(offset, offset + count);
             this.Write(slice);
         }
 

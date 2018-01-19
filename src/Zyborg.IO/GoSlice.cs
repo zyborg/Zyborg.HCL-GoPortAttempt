@@ -147,8 +147,8 @@ namespace Zyborg.IO
                 s = slice<T>.Make((n + 1) * 2);
                 this.CopyTo(s);
             }
-            s = s.slice(0, n);
-            items.CopyTo(s.slice(len, n));
+            s = s.Slice(0, n);
+            items.CopyTo(s.Slice(len, n));
             return s;
         }
 
@@ -272,12 +272,12 @@ namespace Zyborg.IO
             return System.Text.Encoding.UTF8.GetString(s.ToArray());
         }
 
-        public static slice<T> slice<T>(this T[] array, int lower = 0, int upper = int.MinValue)
+        public static slice<T> Slice<T>(this T[] array, int lower = 0, int upper = int.MinValue)
         {
             return new slice<T>(array, lower, upper);
         }
 
-        public static slice<T> slice<T>(this slice<T> slice, int lower = 0, int upper = int.MinValue)
+        public static slice<T> Slice<T>(this slice<T> slice, int lower = 0, int upper = int.MinValue)
         {
             return new slice<T>(slice, lower, upper);
         }
@@ -348,7 +348,7 @@ namespace Zyborg.IO
                     return n;
                 }
                 n++;
-                s = s.slice(i + sep.Length);
+                s = s.Slice(i + sep.Length);
             }
         }
 
@@ -363,7 +363,7 @@ namespace Zyborg.IO
             if (m == 0)
             {
                 // Just return a copy.
-                return IO.slice<byte>.Empty.AppendAll(s);
+                return slice<byte>.Empty.AppendAll(s);
             }
             if (n < 0 || m < n)
             {
@@ -371,7 +371,7 @@ namespace Zyborg.IO
             }
         
             // Apply replacements to buffer.
-            var t = IO.slice.Make<byte>(s.Length + n * @new.Length - old.Length);
+            var t = slice.Make<byte>(s.Length + n * @new.Length - old.Length);
             var w = 0;
             var start = 0;
             for (var i = 0; i < n; i++)
@@ -381,20 +381,20 @@ namespace Zyborg.IO
                 {
                     if (i > 0)
                     {
-                        var (_, wid) = NStack.Utf8.DecodeRune(s.slice(start).ToArray());
+                        var (_, wid) = NStack.Utf8.DecodeRune(s.Slice(start).ToArray());
                         j += wid;
                     }
                 }
                 else
                 {
-                    j += s.slice(start).IndexOf(old);
+                    j += s.Slice(start).IndexOf(old);
                 }
-                w += t.slice(w).CopyFrom(s.slice(start, j));
-                w += t.slice(w).CopyFrom(@new);
+                w += t.Slice(w).CopyFrom(s.Slice(start, j));
+                w += t.Slice(w).CopyFrom(@new);
                 start = j + old.Length;
             }
-            w += t.slice(w).CopyFrom(s.slice(start));
-            return t.slice(0, w);
+            w += t.Slice(w).CopyFrom(s.Slice(start));
+            return t.Slice(0, w);
         }
 
         public static IEnumerable<(int index, T value)> Range<T>(this IEnumerable<T> e,

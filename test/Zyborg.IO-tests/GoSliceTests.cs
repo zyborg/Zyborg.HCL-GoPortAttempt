@@ -24,8 +24,8 @@ namespace Zyborg.IO
             Assert.AreEqual(s2a, slice<int>.Empty);
 
             var array = new int[] { 10, 20, 30 };
-            var s3a = array.slice();
-            var s3b = array.slice();
+            var s3a = array.Slice();
+            var s3b = array.Slice();
 
             Assert.AreNotEqual(s2a, s3a);
             Assert.AreEqual(s3a, s3b);
@@ -71,14 +71,14 @@ namespace Zyborg.IO
         public void TestOverlapCopy()
         {
             var array = new int[] { 10, 20, 30, 40, 50, 60, 70, 80 };
-            var slice = array.slice();
+            var slice = array.Slice();
 
             Assert.AreEqual("[10 20 30 40 50 60 70 80]", slice<int>.ToString(array));
             Assert.AreEqual("[10 20 30 40 50 60 70 80]", slice.ToString());
 
-            var s1 = array.slice(2, 6);
+            var s1 = array.Slice(2, 6);
             Assert.AreEqual("[30 40 50 60]", s1.ToString());
-            var s2 = array.slice(4, 8);
+            var s2 = array.Slice(4, 8);
             Assert.AreEqual("[50 60 70 80]", s2.ToString());
 
             s1.CopyTo(s2);
@@ -88,14 +88,14 @@ namespace Zyborg.IO
             // --
 
             array = new int[] { 10, 20, 30, 40, 50, 60, 70, 80 };
-            slice = array.slice();
+            slice = array.Slice();
 
             Assert.AreEqual("[10 20 30 40 50 60 70 80]", slice<int>.ToString(array));
             Assert.AreEqual("[10 20 30 40 50 60 70 80]", slice.ToString());
 
-            s1 = array.slice(2, 6);
+            s1 = array.Slice(2, 6);
             Assert.AreEqual("[30 40 50 60]", s1.ToString());
-            s2 = array.slice(4, 8);
+            s2 = array.Slice(4, 8);
             Assert.AreEqual("[50 60 70 80]", s2.ToString());
 
             s2.CopyTo(s1);
@@ -128,22 +128,22 @@ namespace Zyborg.IO
         {
             var array = new byte[100];
             
-            var slice = array.slice();
+            var slice = array.Slice();
             Assert.AreEqual(0, slice.Lower);
             Assert.AreEqual(100, slice.Length);
             Assert.AreEqual(100, slice.Capacity);
 
-            slice = array.slice(25);
+            slice = array.Slice(25);
             Assert.AreEqual(25, slice.Lower);
             Assert.AreEqual(75, slice.Length);
             Assert.AreEqual(75, slice.Capacity);
 
-            slice = array.slice(60, 80);
+            slice = array.Slice(60, 80);
             Assert.AreEqual(60, slice.Lower);
             Assert.AreEqual(20, slice.Length);
             Assert.AreEqual(40, slice.Capacity);
 
-            slice = array.slice(25, 75);
+            slice = array.Slice(25, 75);
             Assert.AreEqual(25, slice.Lower);
             Assert.AreEqual(50, slice.Length);
             Assert.AreEqual(75, slice.Capacity);
@@ -153,17 +153,17 @@ namespace Zyborg.IO
             //    len = 50
             //    cap = 75
 
-            var slice2 = slice.slice();
+            var slice2 = slice.Slice();
             Assert.AreEqual(25, slice2.Lower);
             Assert.AreEqual(50, slice2.Length);
             Assert.AreEqual(75, slice2.Capacity);
 
-            slice2 = slice.slice(10);
+            slice2 = slice.Slice(10);
             Assert.AreEqual(35, slice2.Lower);
             Assert.AreEqual(40, slice2.Length);
             Assert.AreEqual(65, slice2.Capacity);
 
-            slice2 = slice.slice(15, 60);
+            slice2 = slice.Slice(15, 60);
             Assert.AreEqual(40, slice2.Lower);
             Assert.AreEqual(45, slice2.Length);
             Assert.AreEqual(60, slice2.Capacity);
@@ -174,7 +174,7 @@ namespace Zyborg.IO
         {
             var array = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             
-            var s1 = array.slice();
+            var s1 = array.Slice();
             Assert.AreEqual(0, s1.Lower);
             Assert.AreEqual(10, s1.Upper);
             Assert.AreEqual(10, s1.Length);
@@ -182,61 +182,61 @@ namespace Zyborg.IO
 
             
             Assert.ThrowsException<ArgumentOutOfRangeException>(
-                    () => array.slice(-1));
+                    () => array.Slice(-1));
 
             Assert.ThrowsException<ArgumentOutOfRangeException>(
-                    () => array.slice(11));
+                    () => array.Slice(11));
 
-            var s2 = array.slice(3);
+            var s2 = array.Slice(3);
             Assert.AreEqual(7, s2.Length);
             Assert.AreEqual(7, s2.Capacity);
             Assert.AreEqual("[3 4 5 6 7 8 9]", s2.ToString());
 
-            var s3 = array.slice(2, 8);
+            var s3 = array.Slice(2, 8);
             Assert.AreEqual(6, s3.Length);
             Assert.AreEqual(8, s3.Capacity);
             Assert.AreEqual("[2 3 4 5 6 7]", s3.ToString());
 
-            var s4 = s2.slice(upper: 5);
+            var s4 = s2.Slice(upper: 5);
             Assert.AreEqual(5, s4.Length);
             Assert.AreEqual(7, s4.Capacity);
             Assert.AreEqual("[3 4 5 6 7]", s4.ToString());
 
-            var s5 = s2.slice(2, 5);
+            var s5 = s2.Slice(2, 5);
             Assert.AreEqual(3, s5.Length);
             Assert.AreEqual(5, s5.Capacity);
             Assert.AreEqual("[5 6 7]", s5.ToString());
 
-            s5 = s5.slice(1, 4);
+            s5 = s5.Slice(1, 4);
             Assert.AreEqual(3, s5.Length);
             Assert.AreEqual(4, s5.Capacity);
             Assert.AreEqual("[6 7 8]", s5.ToString());
 
             Assert.ThrowsException<ArgumentOutOfRangeException>(
-                    () => s5.slice(upper: 5));
+                    () => s5.Slice(upper: 5));
 
-            s5 = s5.slice(upper: 4);
+            s5 = s5.Slice(upper: 4);
             Assert.AreEqual(4, s5.Length);
             Assert.AreEqual(4, s5.Capacity);
             Assert.AreEqual("[6 7 8 9]", s5.ToString());
 
-            var s6 = array.slice(upper: 5);
+            var s6 = array.Slice(upper: 5);
             Assert.AreEqual(5, s6.Length);
             Assert.AreEqual(10, s6.Capacity);
             Assert.AreEqual("[0 1 2 3 4]", s6.ToString());
 
-            s6 = s6.slice(upper: 10);
+            s6 = s6.Slice(upper: 10);
             Assert.AreEqual(10, s6.Length);
             Assert.AreEqual(10, s6.Capacity);
             Assert.AreEqual("[0 1 2 3 4 5 6 7 8 9]", s6.ToString());
 
-            s6 = s6.slice(upper: 8);
+            s6 = s6.Slice(upper: 8);
             Assert.AreEqual(8, s6.Length);
             Assert.AreEqual(10, s6.Capacity);
             Assert.AreEqual("[0 1 2 3 4 5 6 7]", s6.ToString());
 
             Assert.ThrowsException<ArgumentOutOfRangeException>(
-                    () => s6.slice(upper: 11));
+                    () => s6.Slice(upper: 11));
         }
 
         [TestMethod]
@@ -244,24 +244,24 @@ namespace Zyborg.IO
         {
             var array = new int[] { 0, 1, 2, 3, 4 };
 
-            var s1 = array.slice();
+            var s1 = array.Slice();
             Assert.AreEqual("[0 1 2 3 4]", s1.ToString());
-            var s2 = array.slice(2);
+            var s2 = array.Slice(2);
             Assert.AreEqual("[2 3 4]", s2.ToString());
-            var s3 = array.slice(upper: 2);
+            var s3 = array.Slice(upper: 2);
             Assert.AreEqual("[0 1]", s3.ToString());
 
-            var s4 = array.slice(2, 3);
+            var s4 = array.Slice(2, 3);
             Assert.AreEqual("[2]", s4.ToString());
             Assert.AreEqual(3, s4.Capacity);
-            var s5 = s4.slice(0);
+            var s5 = s4.Slice(0);
             Assert.AreEqual("[2]", s5.ToString());
             Assert.AreEqual(3, s5.Capacity);
-            s5 = s4.slice(0, 3);
+            s5 = s4.Slice(0, 3);
             Assert.AreEqual("[2 3 4]", s5.ToString());
             Assert.AreEqual(3, s5.Capacity);
             
-            var s6 = s3.slice(2, 5);
+            var s6 = s3.Slice(2, 5);
             Assert.AreEqual("[2 3 4]", s5.ToString());
             Assert.AreEqual(3, s5.Capacity);
         }
@@ -271,14 +271,14 @@ namespace Zyborg.IO
         {
             var array = new int[] { 0, 1, 2, 3, 4 };
 
-            var s1 = array.slice();
+            var s1 = array.Slice();
             Assert.AreEqual("[0 1 2 3 4]", s1.ToString());
             foreach (var (i, _) in s1.Range())
                 s1[i] *= 10;
             Assert.AreEqual("[0 10 20 30 40]", s1.ToString());
             Assert.AreEqual("[0 10 20 30 40]", slice<int>.ToString(array));
 
-            var s2 = array.slice(2);
+            var s2 = array.Slice(2);
             Assert.AreEqual("[20 30 40]", s2.ToString());
             foreach (var (i, _) in s2.Range())
                 s2[i] += 2;
@@ -381,13 +381,13 @@ namespace Zyborg.IO
             {
                 var @in = tt.@in.AsByteSlice().AppendAll("<spare>".AsByteSlice());
 
-                @in = @in.slice(upper: tt.@in.Length);
+                @in = @in.Slice(upper: tt.@in.Length);
                 var @out = @in.Replace(tt.old.AsByteSlice(), tt.@new.AsByteSlice(), tt.n);
 
                 Assert.AreEqual(tt.@out, @out.AsString(),
                         "Replace({0}, {1}, {2}, {3})", tt.@in, tt.old, tt.@new, tt.n);
 
-                Assert.IsTrue(@in.Capacity != @out.Capacity || @in.slice(upper: 1)[0] != @out.slice(upper:1)[0],
+                Assert.IsTrue(@in.Capacity != @out.Capacity || @in.Slice(upper: 1)[0] != @out.Slice(upper:1)[0],
                        "Replace({0}, {1}, {2}, {3}) didn't copy", tt.@in, tt.old, tt.@new, tt.n);
                 // if cap(in) == cap(out) && &in[:1][0] == &out[:1][0] {
                 //     t.Errorf("Replace(%q, %q, %q, %d) didn't copy", tt.in, tt.old, tt.new, tt.n)

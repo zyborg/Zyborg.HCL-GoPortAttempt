@@ -244,7 +244,7 @@ namespace Zyborg.HCL.scanner
             // create token literal
             string tokenText = string.Empty;
             if (_tokStart >= 0)
-                tokenText = _src.slice(_tokStart, _tokEnd).AsString();
+                tokenText = _src.Slice(_tokStart, _tokEnd).AsString();
             _tokStart = _tokEnd; // ensure idempotency of tokenText() call
 
             return new Token
@@ -501,7 +501,7 @@ namespace Zyborg.HCL.scanner
             }
 
             // Read the identifier
-            var identBytes = _src.slice(offs, _srcPos.Offset - _lastCharLen);
+            var identBytes = _src.Slice(offs, _srcPos.Offset - _lastCharLen);
             if (identBytes.Length == 0)
             {
                 Err("zero-length heredoc anchor");
@@ -511,7 +511,7 @@ namespace Zyborg.HCL.scanner
             Regex identRegexp;
             if (identBytes[0] == '-')
             {
-                identRegexp = new Regex($"[[:space:]]*{identBytes.slice(1).AsString()}\\z");
+                identRegexp = new Regex($"[[:space:]]*{identBytes.Slice(1).AsString()}\\z");
                 //identRegexp = regexp.MustCompile(fmt.Sprintf(`[[:space:]]*%s\z`, identBytes[1:]))
             } else {
                 identRegexp = new Regex($"[[:space:]]*{identBytes.AsString()}\\z");
@@ -532,7 +532,7 @@ namespace Zyborg.HCL.scanner
                     // in the identifier, this cannot be a valid terminator.
                     var lineBytesLen = _srcPos.Offset - _lastCharLen - lineStart;
                     if (lineBytesLen >= identBytes.Length && identRegexp.IsMatch(
-                            _src.slice(lineStart, _srcPos.Offset - _lastCharLen).AsString()))
+                            _src.Slice(lineStart, _srcPos.Offset - _lastCharLen).AsString()))
                     {
                         break;
                     }
@@ -676,7 +676,7 @@ namespace Zyborg.HCL.scanner
                 Unread(); // we got identifier, put back latest char
             }
 
-            return _src.slice(offs, _srcPos.Offset).AsString();
+            return _src.Slice(offs, _srcPos.Offset).AsString();
         }
 
         /// recentPosition returns the position of the character immediately after the

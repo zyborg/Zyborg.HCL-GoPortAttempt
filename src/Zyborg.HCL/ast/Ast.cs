@@ -69,7 +69,7 @@ namespace Zyborg.HCL.ast
                     continue;
 
                 var match = true;
-                foreach (var (i, key0) in item.Keys.slice(upper: keys.Length).Range())
+                foreach (var (i, key0) in item.Keys.Slice(upper: keys.Length).Range())
                 {
                     var key = key0.Token.Value() as string;
                     if (key != keys[i] && !string.Equals(key, keys[i],
@@ -85,7 +85,7 @@ namespace Zyborg.HCL.ast
 
                 // Strip off the prefix from the children
                 var newItem = item;
-                newItem.Keys = newItem.Keys.slice(keys.Length);
+                newItem.Keys = newItem.Keys.Slice(keys.Length);
                 result.Add(newItem);
             }
 

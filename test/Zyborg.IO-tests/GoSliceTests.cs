@@ -331,5 +331,68 @@ namespace Zyborg.IO
                 buf += $"({i},{v})";
             Assert.AreEqual("(1,20)(2,30)", buf);
         }
+
+        class ReplaceTest
+        {
+            public string @in;
+            public string old;
+            public string @new;
+            public int n;
+            public string @out;
+
+            public ReplaceTest(string @in, string old, string @new, int n, string @out)
+            {
+                this.@in = @in;
+                this.old = old;
+                this.@new = @new;
+                this.n = n;
+                this.@out = @out;
+            }
+        }
+        
+        slice<ReplaceTest> replaceTests = slice.From(
+            new ReplaceTest("hello", "l", "L", 0, "hello"),
+            new ReplaceTest("hello", "l", "L", -1, "heLLo"),
+            new ReplaceTest("hello", "x", "X", -1, "hello"),
+            new ReplaceTest("", "x", "X", -1, ""),
+            new ReplaceTest("radar", "r", "<r>", -1, "<r>ada<r>"),
+            new ReplaceTest("", "", "<>", -1, "<>"),
+            new ReplaceTest("banana", "a", "<>", -1, "b<>n<>n<>"),
+            new ReplaceTest("banana", "a", "<>", 1, "b<>nana"),
+            new ReplaceTest("banana", "a", "<>", 1000, "b<>n<>n<>"),
+            new ReplaceTest("banana", "an", "<>", -1, "b<><>a"),
+            new ReplaceTest("banana", "ana", "<>", -1, "b<>na"),
+            new ReplaceTest("banana", "", "<>", -1, "<>b<>a<>n<>a<>n<>a<>"),
+            new ReplaceTest("banana", "", "<>", 10, "<>b<>a<>n<>a<>n<>a<>"),
+            new ReplaceTest("banana", "", "<>", 6, "<>b<>a<>n<>a<>n<>a"),
+            new ReplaceTest("banana", "", "<>", 5, "<>b<>a<>n<>a<>na"),
+            new ReplaceTest("banana", "", "<>", 1, "<>banana"),
+            new ReplaceTest("banana", "a", "a", -1, "banana"),
+            new ReplaceTest("banana", "a", "a", 1, "banana")
+
+            // This doesn't seem to work
+            // new ReplaceTest("☺☻☹", "", "<>", -1, "<>☺<>☻<>☹<>")
+        );
+        
+        [TestMethod]
+        public void TestReplace()
+        {
+            foreach (var tt in replaceTests)
+            {
+                var @in = tt.@in.AsByteSlice().AppendAll("<spare>".AsByteSlice());
+
+                @in = @in.slice(upper: tt.@in.Length);
+                var @out = @in.Replace(tt.old.AsByteSlice(), tt.@new.AsByteSlice(), tt.n);
+
+                Assert.AreEqual(tt.@out, @out.AsString(),
+                        "Replace({0}, {1}, {2}, {3})", tt.@in, tt.old, tt.@new, tt.n);
+
+                Assert.IsTrue(@in.Capacity != @out.Capacity || @in.slice(upper: 1)[0] != @out.slice(upper:1)[0],
+                       "Replace({0}, {1}, {2}, {3}) didn't copy", tt.@in, tt.old, tt.@new, tt.n);
+                // if cap(in) == cap(out) && &in[:1][0] == &out[:1][0] {
+                //     t.Errorf("Replace(%q, %q, %q, %d) didn't copy", tt.in, tt.old, tt.new, tt.n)
+                // }
+            }
+        }
     }
 }

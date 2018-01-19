@@ -282,6 +282,40 @@ namespace Zyborg.IO
             return new slice<T>(slice, lower, upper);
         }
 
+        public static int IndexOf<T>(this slice<T> s, T c, int offset = 0, Func<T, T, bool> comparer = null)
+        {
+            if (comparer == null)
+                comparer = (x, y) => object.Equals(x, y);
+            for (int i = offset; i < s.Length; i++)
+                if (comparer(c, s[i]))
+                    return i;
+            return -1;
+        }
+
+        /// Index returns the index of the first instance of sep in s, or -1 if sep is not present in s.
+        public static int IndexOf<T>(this slice<T> s, slice<T> sep, int offset = 0, Func<T, T, bool> comparer = null)
+        {
+            if (comparer == null)
+                comparer = (x, y) => object.Equals(x, y);
+
+            // TODO:  this is a simple, naive implementation for correctness
+            // An optimized version may borrow some of the ideas of Go's impl
+            int i, j, sepLen = sep.Length, max = s.Length - sepLen + 1;
+            for (i = offset; i < max; i++)
+            {
+                for (j = 0; j < sepLen; j++)
+                    if (!comparer(s[i + j], sep[j]))
+                        break;
+
+                if (j == sep.Length)
+                    // We went through all of
+                    // sep so must be a match
+                    return i;
+            }
+
+            return -1;
+        }
+
         public static slice<T> Repeat<T>(this T[] array, int count)
         {
             var arrayLen = array.Length;
@@ -289,6 +323,78 @@ namespace Zyborg.IO
             for (int i = 0; i < count; i++)
                 Array.Copy(array, 0, newArray, i * arrayLen, arrayLen);
             return new slice<T>(newArray);
+        }
+
+        /// Count counts the number of non-overlapping instances of sep in s.
+        /// If sep is an empty slice, Count returns 1 + the number of Unicode code points in s.
+        public static int Count(this slice<byte> s, slice<byte> sep)
+        {
+            // TODO: can we do some kind of optimization like this???
+            // if len(sep) == 1 && cpu.X86.HasPOPCNT {
+            //     return countByte(s, sep[0])
+            // }
+            
+            // From: countGeneric(s, sep)
+            
+            // special case
+            if (sep.Length == 0)
+                return NStack.Utf8.RuneCount(s.ToArray()) + 1;
+            var n = 0;
+            for (;;)
+            {
+                
+                var i = s.IndexOf(sep);
+                if (i == -1) {
+                    return n;
+                }
+                n++;
+                s = s.slice(i + sep.Length);
+            }
+        }
+
+        public static slice<byte> Replace(this slice<byte> s, slice<byte> old, slice<byte> @new, int n)
+        {
+            var m = 0;
+            if (n != 0)
+            {
+                // Compute number of replacements.
+                m = s.Count(old);
+            }
+            if (m == 0)
+            {
+                // Just return a copy.
+                return IO.slice<byte>.Empty.AppendAll(s);
+            }
+            if (n < 0 || m < n)
+            {
+                n = m;
+            }
+        
+            // Apply replacements to buffer.
+            var t = IO.slice.Make<byte>(s.Length + n * @new.Length - old.Length);
+            var w = 0;
+            var start = 0;
+            for (var i = 0; i < n; i++)
+            {
+                var j = start;
+                if (old.Length == 0)
+                {
+                    if (i > 0)
+                    {
+                        var (_, wid) = NStack.Utf8.DecodeRune(s.slice(start).ToArray());
+                        j += wid;
+                    }
+                }
+                else
+                {
+                    j += s.slice(start).IndexOf(old);
+                }
+                w += t.slice(w).CopyFrom(s.slice(start, j));
+                w += t.slice(w).CopyFrom(@new);
+                start = j + old.Length;
+            }
+            w += t.slice(w).CopyFrom(s.slice(start));
+            return t.slice(0, w);
         }
 
         public static IEnumerable<(int index, T value)> Range<T>(this IEnumerable<T> e,

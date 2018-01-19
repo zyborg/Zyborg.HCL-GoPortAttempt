@@ -89,6 +89,25 @@ namespace Zyborg.HCL.Token
             return s;
         }
 
+        public override bool Equals(object obj)
+        {
+            var that = obj as Token;
+            return that != null
+                    && object.Equals(Type, that.Type)
+                    && object.Equals(Pos, that.Pos)
+                    && object.Equals(Text, that.Text)
+                    && object.Equals(JSON, that.JSON)
+                    ;
+        }
+
+        public override int GetHashCode()
+        {
+            return ((((int)Type) * 23
+                    + Pos.GetHashCode()) * 23
+                    + Text.GetHashCode()) * 23
+                    + (JSON ? 1 : 0);
+        }
+
         /// IsIdentifier returns true for tokens corresponding to identifiers and basic
         /// type literals; it returns false otherwise.
         public static bool IsIdentifier(TokenType t) =>

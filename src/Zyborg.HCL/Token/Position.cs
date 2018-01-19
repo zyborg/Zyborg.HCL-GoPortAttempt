@@ -58,5 +58,26 @@ namespace Zyborg.HCL.Token
             }
             return s;
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null || !(obj is Pos))
+                return false;
+
+            var that = (Pos)obj;
+            return object.Equals(Filename, that.Filename)
+                    && object.Equals(Offset, that.Offset)
+                    && object.Equals(Line, that.Line)
+                    && object.Equals(Column, that.Column)
+                    ;
+        }
+
+        public override int GetHashCode()
+        {
+            return ((Filename.GetHashCode() * 23
+                    + Offset) * 23
+                    + Line) * 23
+                    + Column;
+        }
     }
 }

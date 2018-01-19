@@ -4,7 +4,27 @@ using System.Collections.Generic;
 
 namespace Zyborg.IO
 {
-    public struct slice<T> : IEnumerable<T>
+    public static class slice
+    {
+        public static slice<T> Make<T>(int length, int capacity = int.MinValue)
+        {
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length));
+            if (capacity == int.MinValue)
+                capacity = length;
+            if (capacity < length)
+                throw new ArgumentException("length cannot exceed capacity", nameof(capacity));
+
+            return new slice<T>(new T[capacity], 0, length);
+        }
+
+        public static slice<T> From<T>(params T[] items)
+        {
+            return slice<T>.From(items);
+        }
+    }
+
+    public struct slice<T> : IEnumerable<T>, IEquatable<slice<T>>
     {
         public static readonly slice<T> Empty = default(slice<T>);
 
@@ -156,8 +176,17 @@ namespace Zyborg.IO
             return ToString(this);
         }
 
+        // TODO:  Do we really want to implement Equals and GetHashCode?
+        // This could be very expensive and maybe should be left up to
+        // the client if they decide they need this
+
+        public bool Equals(slice<T> obj)
+        {
+            return this.Equals(obj, null);
+        }
+
         /// Returns true if the elements are equal.
-        public bool Equals(slice<T> obj, IComparer<T> c = null)
+        public bool Equals(slice<T> obj, IComparer<T> c)
         {
             // We short-circuit if the slices are exactly the same, for performance
             if (this._array == obj._array && this._lower == obj._lower && this._upper == obj._upper)
@@ -166,12 +195,15 @@ namespace Zyborg.IO
             if (this.Length != obj.Length)
                 return false;
 
-            if (c == null)
-                c = Comparer<T>.Default;
+            Func<T, T, bool> comparer;
+            if (c != null)
+                comparer = (t1, t2) => 0 == c.Compare(t1, t2);
+            else
+                comparer = (t1, t2) => object.Equals(t1, t2);
 
             for (int i = 0, len = Length; i < len; i++)
             {
-                if (0 != c.Compare(this._array[this._lower + i], obj._array[obj._lower + i]))
+                if (!comparer(this._array[this._lower + i], obj._array[obj._lower + i]))
                     return false;
             }
 
@@ -181,6 +213,18 @@ namespace Zyborg.IO
         public override bool Equals(object obj)
         {
             return obj != null && (obj is slice<T>) && Equals((slice<T>)obj, null);
+        }
+
+        public override int GetHashCode()
+        {
+            if (_array == null || _array.Length == 0)
+                return 0;
+            var hash = 17;
+            foreach (var item in _array)
+            {
+                hash = hash * 23 + (item == null ? 0 : item.GetHashCode());
+            }
+            return hash;
         }
         
         public static slice<T> Make(int length, int capacity = int.MinValue)
@@ -204,7 +248,7 @@ namespace Zyborg.IO
         {
             return "[" + string.Join(" ", e) + "]";
         }
-   }
+    }
 
     public static class SliceExtensions
     {

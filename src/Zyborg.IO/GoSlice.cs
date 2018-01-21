@@ -352,7 +352,7 @@ namespace Zyborg.IO
             }
         }
 
-        public static slice<byte> Replace(this slice<byte> s, slice<byte> old, slice<byte> @new, int n)
+        public static slice<byte> Replace(this slice<byte> s, slice<byte> old, slice<byte> @new, int n = -1)
         {
             var m = 0;
             if (n != 0)

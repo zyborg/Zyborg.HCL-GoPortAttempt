@@ -38,7 +38,7 @@ namespace Zyborg.HCL.token
     }
 
     /// Token defines a single HCL token which can be obtained via the Scanner
-    public class Token
+    public struct Token
     {
         public TokenType Type
         {get; set; }
@@ -91,13 +91,13 @@ namespace Zyborg.HCL.token
 
         public override bool Equals(object obj)
         {
-            var that = obj as Token;
-            return that != null
-                    && object.Equals(Type, that.Type)
-                    && object.Equals(Pos, that.Pos)
-                    && object.Equals(Text, that.Text)
-                    && object.Equals(JSON, that.JSON)
-                    ;
+            if (obj != null && obj is Token that)
+                return object.Equals(Type, that.Type)
+                        && object.Equals(Pos, that.Pos)
+                        && object.Equals(Text, that.Text)
+                        && object.Equals(JSON, that.JSON)
+                        ;
+            return false;
         }
 
         public override int GetHashCode()
@@ -189,7 +189,7 @@ namespace Zyborg.HCL.token
         /// and the content of a HEREDOC with the hanging indent removed if it is started with
         /// a &lt;&lt;-, and the terminating line is at least as indented as the least indented line.
 
-        protected string unindentHeredoc(string heredoc)
+        private string unindentHeredoc(string heredoc)
         {
             // We need to find the end of the marker
             var idx = heredoc.IndexOf('\n');

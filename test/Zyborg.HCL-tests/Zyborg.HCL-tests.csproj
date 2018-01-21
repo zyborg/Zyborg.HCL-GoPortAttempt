@@ -18,4 +18,8 @@
     <ProjectReference Include="..\..\src\Zyborg.IO\Zyborg.IO.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+      <None Include="test-fixtures/*.hcl" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

@@ -8,4 +8,8 @@
     <ProjectReference Include="..\gozer\gozer.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="NStack.Core" Version="0.6.0" />
+  </ItemGroup>
+
 </Project>

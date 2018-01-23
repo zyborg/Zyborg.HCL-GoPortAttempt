@@ -20,6 +20,8 @@
 
   <ItemGroup>
       <None Include="test-fixtures/*.hcl" CopyToOutputDirectory="PreserveNewest" />
+      <None Include="testdata/*.input" CopyToOutputDirectory="PreserveNewest" />
+      <None Include="testdata/*.golden" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

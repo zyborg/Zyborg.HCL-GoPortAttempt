@@ -14,6 +14,8 @@ namespace gozer
 
     public class Switch<T>
     {
+        private bool _evaluated = false;
+
         private T _value;
         private T[] _lastCaseValues;
 
@@ -52,19 +54,29 @@ namespace gozer
 
         public void Eval()
         {
-            foreach (var c in _cases)
+            if (_evaluated)
+                return;
+            
+            try
             {
-                foreach (var val in c.caseValues)
+                foreach (var c in _cases)
                 {
-                    if (object.Equals(_value, val))
+                    foreach (var val in c.caseValues)
                     {
-                        if (c.thenAction != null)
-                            c.thenAction();
-                        return;
+                        if (object.Equals(_value, val))
+                        {
+                            if (c.thenAction != null)
+                                c.thenAction();
+                            return;
+                        }
                     }
                 }
-            }
 
-            _default();
+                _default?.Invoke();
+            }
+            finally
+            {
+                _evaluated = true;
+            }
         }
     }}

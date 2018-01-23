@@ -74,7 +74,8 @@ namespace Zyborg.HCL.token
 
         public override int GetHashCode()
         {
-            return ((Filename.GetHashCode() * 23
+            var filenameHash = (Filename?.GetHashCode()).GetValueOrDefault();
+            return ((filenameHash * 23
                     + Offset) * 23
                     + Line) * 23
                     + Column;

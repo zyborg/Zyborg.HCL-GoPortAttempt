@@ -1,7 +1,8 @@
 using System;
 using System.Text.RegularExpressions;
+using gozer;
+using GoBuffer = gozer.bytes.Buffer;
 using Zyborg.HCL.token;
-using Zyborg.IO;
 
 namespace Zyborg.HCL.scanner
 {

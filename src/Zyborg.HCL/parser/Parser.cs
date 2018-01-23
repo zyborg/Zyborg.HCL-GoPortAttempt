@@ -1,8 +1,8 @@
 using System;
+using gozer;
 using Zyborg.HCL.ast;
 using Zyborg.HCL.scanner;
 using Zyborg.HCL.token;
-using Zyborg.IO;
 
 namespace Zyborg.HCL.parser
 {

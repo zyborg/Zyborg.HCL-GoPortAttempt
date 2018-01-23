@@ -1,5 +1,5 @@
 using System;
-using Zyborg.IO;
+using gozer;
 
 namespace Zyborg.HCL.ast
 {

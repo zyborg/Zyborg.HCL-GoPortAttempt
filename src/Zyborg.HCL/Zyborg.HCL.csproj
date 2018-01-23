@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Zyborg.IO\Zyborg.IO.csproj" />
+    <ProjectReference Include="..\gozer\gozer.csproj" />
   </ItemGroup>
 
 </Project>

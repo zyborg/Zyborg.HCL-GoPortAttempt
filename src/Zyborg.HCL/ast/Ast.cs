@@ -1,6 +1,6 @@
 using System;
 using Zyborg.HCL.token;
-using Zyborg.IO;
+using gozer;
 
 namespace Zyborg.HCL.ast
 {

@@ -2,10 +2,10 @@ using System;
 using System.Reflection;
 using DeepEqual;
 using DeepEqual.Syntax;
+using gozer;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Zyborg.HCL.token;
-using Zyborg.IO;
 
 namespace Zyborg.HCL.ast
 {

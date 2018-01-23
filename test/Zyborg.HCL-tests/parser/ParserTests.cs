@@ -1,11 +1,11 @@
 using System;
 using System.IO;
+using gozer;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Zyborg.HCL.ast;
 using Zyborg.HCL.parser;
 using Zyborg.HCL.token;
-using Zyborg.IO;
 
 namespace Zyborg.HCL.parser
 {

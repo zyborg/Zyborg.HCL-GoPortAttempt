@@ -2,7 +2,8 @@ using System;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zyborg.HCL.token;
-using Zyborg.IO;
+using GoBuffer = gozer.bytes.Buffer;
+using gozer;
 
 namespace Zyborg.HCL.scanner
 {

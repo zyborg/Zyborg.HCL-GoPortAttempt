@@ -1,13 +1,14 @@
 using System;
 using System.IO;
 using System.Text;
+using gozer.io;
 
 namespace gozer.bytes
 {
     /// Simple byte buffer for marshaling data.
     /// A Buffer is a variable-sized buffer of bytes with Read and Write methods.
     /// The zero value for Buffer is an empty buffer ready to use.
-    public class Buffer : Stream
+    public class Buffer : Stream, IWriter
     {
         private slice<byte> _buf; // contents are the bytes buf[off : len(buf)]
         private int _off;    // read at &buf[off], write at &buf[len(buf)]

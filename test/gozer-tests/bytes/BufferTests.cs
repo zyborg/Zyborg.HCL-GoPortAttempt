@@ -2,12 +2,11 @@ using System;
 using System.Text;
 using DeepEqual.Syntax;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zyborg.IO;
 
-namespace Zyborg.IO_tests
+namespace gozer.bytes
 {
     [TestClass]
-    public class GoBufferTests
+    public class BufferTests
     {
         // Comparable to the testing.T.Short() flag 
         // TODO:  move this out to an invocation parameter?
@@ -31,7 +30,7 @@ namespace Zyborg.IO_tests
         }
 
         /// Verify that contents of buf match the string s.
-        private void Check(GoBuffer buf, string s)
+        private void Check(Buffer buf, string s)
         {
             var bytes = buf.Bytes();
             var str = buf.ToString();
@@ -60,7 +59,7 @@ namespace Zyborg.IO_tests
         /// Fill buf through n writes of string fus.
         /// The initial contents of buf corresponds to the string s;
         /// the result is the final contents of buf returned as a string.
-        private string FillString(GoBuffer buf, string s, int n, string fus)
+        private string FillString(Buffer buf, string s, int n, string fus)
         {
             Check(buf, s);
             for (; n > 0; n--)
@@ -76,7 +75,7 @@ namespace Zyborg.IO_tests
         /// Fill buf through n writes of byte slice fub.
         /// The initial contents of buf corresponds to the string s;
         /// the result is the final contents of buf returned as a string.
-        private string FillBytes(GoBuffer buf, string s, int n, slice<byte> fub)
+        private string FillBytes(Buffer buf, string s, int n, slice<byte> fub)
         {
             Check(buf, s);
             for (; n > 0; n--)
@@ -92,20 +91,20 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestNewBuffer()
         {
-            var buf = GoBuffer.NewBuffer(testBytes);
+            var buf = Buffer.NewBuffer(testBytes);
             Check(buf, data);
         }
 
         [TestMethod]
         public void TestNewBufferString()
         {
-            var buf = GoBuffer.NewBufferString(data);
+            var buf = Buffer.NewBufferString(data);
             Check(buf, data);
         }
 
         /// Empty buf through repeated reads into fub.
         /// The initial contents of buf corresponds to the string s.
-        private void Empty(GoBuffer buf, string s, slice<byte> fub)
+        private void Empty(Buffer buf, string s, slice<byte> fub)
         {
             Check(buf, s);
 
@@ -125,7 +124,7 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestBasicOperations()
         {
-            var buf = new GoBuffer();
+            var buf = new Buffer();
 
             for (var i = 0; i < 5; i++)
             {
@@ -169,7 +168,7 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestLargeStringWrites()
         {
-            var buf = new GoBuffer();
+            var buf = new Buffer();
             var limit = 30;
 
             if (ShortTest)
@@ -186,7 +185,7 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestLargeByteWrites()
         {
-            var buf = new GoBuffer();
+            var buf = new Buffer();
             var limit = 30;
             if (ShortTest)
                 limit = 9;
@@ -202,7 +201,7 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestLargeStringReads()
         {
-            var buf = new GoBuffer();
+            var buf = new Buffer();
             
             for (var i = 3; i < 30; i += 3)
             {
@@ -215,7 +214,7 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestLargeByteReads()
         {
-            var buf = new GoBuffer();
+            var buf = new Buffer();
 
             for (var i = 3; i < 30; i += 3)
             {
@@ -228,7 +227,7 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestMixedReadsAndWrites()
         {
-            var buf = new GoBuffer();
+            var buf = new Buffer();
             var s = "";
             var rng = new System.Random();
 
@@ -256,7 +255,7 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestCapWithPreallocatedSlice()
         {
-            var buf = GoBuffer.NewBuffer(slice<byte>.Make(10));
+            var buf = Buffer.NewBuffer(slice<byte>.Make(10));
             var n = buf.Cap();
             Assert.AreEqual(10, n, "expected 10, got {0}", n);
         }
@@ -264,7 +263,7 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestCapWithSliceAndWrittenData()
         {
-            var buf = GoBuffer.NewBuffer(slice<byte>.Make(0, 10));
+            var buf = Buffer.NewBuffer(slice<byte>.Make(0, 10));
             buf.Write("test".AsByteSlice());
             var n = buf.Cap();
             Assert.AreEqual(10, n, "expected 10, got {0}", n);
@@ -273,19 +272,19 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestNil()
         {
-            var b = default(GoBuffer);
+            var b = default(Buffer);
             Assert.AreEqual("<nil>", b.String(), "expected <nil>; got {0}", b.String());
         }
 
         [TestMethod]
         public void TestReadFrom()
         {
-            var buf = new GoBuffer();
+            var buf = new Buffer();
             
             for (var i = 3; i < 30; i += 3)
             {
                 var s = FillBytes(buf, "", 5, testBytes.Slice(0, testBytes.Length / i));
-                var b = new GoBuffer();
+                var b = new Buffer();
                 b.ReadFrom(buf);
                 Empty(b, s, slice<byte>.Make(data.Length));
             }
@@ -294,11 +293,11 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestWriteTo()
         {
-            var buf = new GoBuffer();
+            var buf = new Buffer();
             for (var i = 3; i < 30; i += 3)
             {
                 var s = FillBytes(buf, "", 5, testBytes.Slice(0, testBytes.Length / i));
-                var b = new GoBuffer();
+                var b = new Buffer();
                 buf.WriteTo(b);
                 Empty(b, s, slice<byte>.Make(data.Length));
             }
@@ -310,8 +309,8 @@ namespace Zyborg.IO_tests
             var NRune = 1000;
             
             // Built a test slice while we write the data
-            var b = slice<byte>.Make(GoBuffer.UTFMax * NRune);
-            var buf = new GoBuffer();
+            var b = slice<byte>.Make(Buffer.UTFMax * NRune);
+            var buf = new Buffer();
             var n = 0;
 
             var zeroChar = (char)0;
@@ -330,7 +329,7 @@ namespace Zyborg.IO_tests
             Assert.IsTrue(b.Equals(buf.Bytes()),
                     "incorrect result from WriteRune: {0} not {1}", buf.Bytes(), b);
 
-            var p = slice<byte>.Make(GoBuffer.UTFMax);
+            var p = slice<byte>.Make(Buffer.UTFMax);
             // Read it back with ReadRune
             for (var r = zeroChar; r < NRune; r++)
             {
@@ -390,7 +389,7 @@ namespace Zyborg.IO_tests
                         // Check that if we start with a buffer
                         // of length j at offset i and ask for
                         // Next(k), we get the right bytes.
-                        var buf = GoBuffer.NewBuffer(b.Slice(0, j));
+                        var buf = Buffer.NewBuffer(b.Slice(0, j));
                         var (n, _) = buf.Read(tmp.Slice(0, i));
                         Assert.AreEqual(i, n);
                         var bb = buf.Next(k);
@@ -438,7 +437,7 @@ namespace Zyborg.IO_tests
         {
             foreach (var test in _readBytesTests)
             {
-                var buf = GoBuffer.NewBufferString(test.buffer);
+                var buf = Buffer.NewBufferString(test.buffer);
                 bool eof = false;
 
                 foreach (var expected in test.expected)
@@ -458,7 +457,7 @@ namespace Zyborg.IO_tests
         {
             foreach (var test in _readBytesTests)
             {
-                var buf = GoBuffer.NewBufferString(test.buffer);
+                var buf = Buffer.NewBufferString(test.buffer);
                 bool eof = false;
 
                 foreach (var expected in test.expected)
@@ -487,7 +486,7 @@ namespace Zyborg.IO_tests
 
             for (var i = 0; i < testing_B_N; i++)
             {
-                var buf = GoBuffer.NewBuffer(data);
+                var buf = Buffer.NewBuffer(data);
                 var (_, eof) = buf.ReadString((byte)'x');
                 Assert.IsFalse(eof);
             }
@@ -505,7 +504,7 @@ namespace Zyborg.IO_tests
                 var xBytes = x.Repeat(startLen);
                 foreach (var growLen in new [] { 0, 100, 1000, 10000, 100000 })
                 {
-                    var buf = GoBuffer.NewBuffer(xBytes);
+                    var buf = Buffer.NewBuffer(xBytes);
                     // If we read, this affects buf.off, which is good to test.
                     var (readBytes, _) = buf.Read(tmp);
                     buf.Grow(growLen);
@@ -532,7 +531,7 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestReadEmptyAtEOF()
         {
-            var b = new GoBuffer();
+            var b = new Buffer();
             var slice = slice<byte>.Make(0);
             var (n, eof) = b.Read(slice);
             Assert.IsFalse(eof);
@@ -542,7 +541,7 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestUnreadByte()
         {
-            var b = new GoBuffer();
+            var b = new Buffer();
 
             // check at EOF
             Assert.ThrowsException<Exception>(() => b.UnreadByte());
@@ -597,7 +596,7 @@ namespace Zyborg.IO_tests
         [TestMethod]
         public void TestBufferGrowth()
         {
-            var b = new GoBuffer();
+            var b = new Buffer();
             var buf = slice<byte>.Make(1024);
             b.Write(buf.Slice(0, 1));
             int cap0 = 0;

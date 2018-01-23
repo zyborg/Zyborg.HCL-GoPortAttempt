@@ -1,5 +1,3 @@
-using Zyborg.IO;
-
 namespace gozer.io
 {
     public interface IWriter

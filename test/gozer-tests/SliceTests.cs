@@ -1,7 +1,7 @@
 using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Zyborg.IO
+namespace gozer
 {
     [TestClass]
     public class sliceTests

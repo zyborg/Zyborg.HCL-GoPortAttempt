@@ -1,8 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 
-namespace Zyborg.IO
+namespace gozer
 {
     public static class slice
     {
@@ -22,15 +23,23 @@ namespace Zyborg.IO
         {
             return slice<T>.From(items);
         }
+
+        public static void WriteTo(this slice<byte> slice, Stream s, int lower = -1, int upper = -1)
+        {
+            if (lower == -1) lower = slice._lower;
+            if (upper == -1) upper = slice._upper;
+            var count = upper - lower;
+            s.Write(slice._array, lower, count);
+        }
     }
 
     public struct slice<T> : IEnumerable<T>, IEquatable<slice<T>>
     {
         public static readonly slice<T> Empty = default(slice<T>);
 
-        private T[] _array;
-        private int _lower;
-        private int _upper;
+        internal T[] _array;
+        internal int _lower;
+        internal int _upper;
 
         public slice(T[] array, int lower = 0, int upper = int.MinValue)
         {

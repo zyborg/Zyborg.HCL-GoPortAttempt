@@ -1,7 +1,7 @@
 ﻿using System;
+using GoBuffer = gozer.bytes.Buffer;
 using gozer.io;
 using NStack;
-using Zyborg.IO;
 
 namespace gozer.text
 {

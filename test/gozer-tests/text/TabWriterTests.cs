@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zyborg.IO;
 using gozer.io;
 using static gozer.text.TabWriter;
 

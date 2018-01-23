@@ -2,12 +2,12 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace Zyborg.IO
+namespace gozer.bytes
 {
     /// Simple byte buffer for marshaling data.
     /// A Buffer is a variable-sized buffer of bytes with Read and Write methods.
     /// The zero value for Buffer is an empty buffer ready to use.
-    public class GoBuffer : Stream
+    public class Buffer : Stream
     {
         private slice<byte> _buf; // contents are the bytes buf[off : len(buf)]
         private int _off;    // read at &buf[off], write at &buf[len(buf)]
@@ -24,7 +24,7 @@ namespace Zyborg.IO
         private Exception ErrTooLarge() => new IOException("bytes.Buffer: too large");
 
         /// Necessary to inherit Stream's protected constructor
-        public GoBuffer()
+        public Buffer()
         { }
 
         /// Bytes returns a slice of length b.Len() holding the unread portion of the buffer.
@@ -530,9 +530,9 @@ namespace Zyborg.IO
         /// In most cases, new(Buffer) (or just declaring a Buffer variable) is
         /// sufficient to initialize a Buffer.
         //func NewBuffer(buf []byte) *Buffer { return &Buffer{buf: buf} }
-        public static GoBuffer NewBuffer(slice<byte> buf)
+        public static Buffer NewBuffer(slice<byte> buf)
         {
-            return new GoBuffer { _buf = buf };
+            return new Buffer { _buf = buf };
         }
 
         /// NewBufferString creates and initializes a new Buffer using string s as its
@@ -544,9 +544,9 @@ namespace Zyborg.IO
         // func NewBufferString(s string) *Buffer {
         //     return &Buffer{buf: []byte(s)}
         // }        
-        public static GoBuffer NewBufferString(string s)
+        public static Buffer NewBufferString(string s)
         {
-            return new GoBuffer { _buf = Encoding.UTF8.GetBytes(s).Slice() };
+            return new Buffer { _buf = Encoding.UTF8.GetBytes(s).Slice() };
         }
 
         // The following implement the Stream base class semantics
@@ -623,11 +623,11 @@ namespace Zyborg.IO
         opReadRune4        = 4,  // Read rune of size 4.
     }
 
-    public static class GoBufferExtensions
+    public static class BufferExtensions
     {
         /// Mimics the same-named Go method, including the
         /// special case for a null buffer, useful for debugging.
-        public static string String(this GoBuffer b)
+        public static string String(this Buffer b)
         {
             if (b == null)
                 // Special case, useful in debugging.

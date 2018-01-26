@@ -3,12 +3,20 @@ using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using gozer.io;
 using static gozer.text.TabWriter;
+using NStack;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Linq;
+using Zyborg.MSTest;
 
 namespace gozer.text
 {
     [TestClass]
     public class TabWriterTests
     {
+        public TestContext TestContext
+        { get; set; }
+
         class Buffer : IWriter
         {
             slice<byte> a;
@@ -42,23 +50,28 @@ namespace gozer.text
                 return buf.Length;
             }
 
-            public override string ToString() => a.AsString();
+            public ustring ToUstring() => a.AsUstring();
 
-            internal static void Write(string testname, TabWriter w, string src)
+            internal static void Write(string testname, TabWriter w, ustring src)
             {
                 w.WriteString(src);
             }
             
-            internal static void Verify(string testname, TabWriter w, Buffer b, string src, string expected)
+            internal static void Verify(TestContext tc, string testname, TabWriter w, Buffer b, ustring src, ustring expected)
             {
                 w.Flush();
-                var res = b.ToString();
+                var res = b.ToUstring();
+
+                // DBG:
+                tc.WriteLine($"  expected = {expected.Slice()}");
+                tc.WriteLine($"     found = {res.Slice()}");
+
                 Assert.AreEqual(expected, res,
                         $"--- test: {testname}\n--- src:\n{src}\n--- found:\n{res}\n--- expected:\n{expected}\n");
             }
             
-            internal static void Check(string testname, int minwidth, int tabwidth, int padding, byte padchar,
-                    TabWriter.Formatting flags, string src, string expected)
+            internal static void Check(TestContext tc, string testname, int minwidth, int tabwidth, int padding, byte padchar,
+                    TabWriter.Formatting flags, ustring src, ustring expected)
             {
                 var b = new Buffer();
                 b.Init(1000);
@@ -70,35 +83,35 @@ namespace gozer.text
                 var title = testname + " (written all at once)";
                 b.Clear();
                 Write(title, w, src);
-                Verify(title, w, b, src, expected);
+                Verify(tc, title, w, b, src, expected);
             
                 // write byte-by-byte
                 title = testname + " (written byte-by-byte)";
                 b.Clear();
                 for (var i = 0; i < src.Length; i++)
                 {
-                    Write(title, w, src.AsByteSlice().Slice(i, i + 1).AsString());
+                    Write(title, w, src.ToByteArray().Slice(i, i + 1).ToArray());
                 }
-                Verify(title, w, b, src, expected);
+                Verify(tc, title, w, b, src, expected);
             
                 // write using Fibonacci slice sizes
                 title = testname + " (written in fibonacci slices)";
                 b.Clear();
                 for (var (i, d) = (0, 0); i < src.Length; )
                 {
-                    Write(title, w, src.AsByteSlice().Slice(i, i + d).AsString());
+                    Write(title, w, src.ToByteArray().Slice(i, i + d).ToArray());
                     (i, d) = (i + d, d + 1);
                     if (i + d > src.Length)
                     {
                         d = src.Length - i;
                     }
                 }
-                Verify(title, w, b, src, expected);
+                Verify(tc, title, w, b, src, expected);
             }
         }
 
-        (string testname, int minwidth, int tabwidth, int padding, char padchar,
-            Formatting flags, string src, string expected)[] tests = new[]
+        static (string testname, int minwidth, int tabwidth, int padding, char padchar,
+            Formatting flags, ustring src, ustring expected)[] tests = new[]
         {
             (
                 "1a",
@@ -120,56 +133,56 @@ namespace gozer.text
                 ""
             ),
         
-            // TODO:  UTF16vsUTF8
+            (
+                "1b esc stripped",
+                8, 0, 1, '.', Formatting.StripEscape,
+                slice.Make($"{0xff::}{0xff::}").AsUstring(),
+                (ustring)""
+            ),
+            (
+                "1b esc",
+                8, 0, 1, '.', Formatting.None,
+                slice.Make($"{0xff::}{0xff::}").AsUstring(),
+                slice.Make($"{0xff::}{0xff::}").AsUstring()
+            ),
 
-            // (
-            //     "1b esc stripped",
-            //     8, 0, 1, '.', Formatting.StripEscape,
-            //     "\xff\xff",
-            //     ""
-            // ),
-            // (
-            //     "1b esc",
-            //     8, 0, 1, '.', Formatting.None,
-            //     "\xff\xff",
-            //     "\xff\xff"
-            // ),
-            // (
-            //     "1c esc stripped",
-            //     8, 0, 1, '.', Formatting.StripEscape,
-            //     "\xff\t\xff",
-            //     "\t"
-            // ),
-            // (
-            //     "1c esc",
-            //     8, 0, 1, '.', Formatting.None,
-            //     "\xff\t\xff",
-            //     "\xff\t\xff"
-            // ),
-            // (
-            //     "1d esc stripped",
-            //     8, 0, 1, '.', Formatting.StripEscape,
-            //     "\xff\"foo\t\n\tbar\"\xff",
-            //     "\"foo\t\n\tbar\""
-            // ),
-            // (
-            //     "1d esc",
-            //     8, 0, 1, '.', Formatting.None,
-            //     "\xff\"foo\t\n\tbar\"\xff",
-            //     "\xff\"foo\t\n\tbar\"\xff"
-            // ),
-            // (
-            //     "1e esc stripped",
-            //     8, 0, 1, '.', Formatting.StripEscape,
-            //     "abc\xff\tdef", // unterminated escape
-            //     "abc\tdef"
-            // ),
-            // (
-            //     "1e esc",
-            //     8, 0, 1, '.', Formatting.None,
-            //     "abc\xff\tdef", // unterminated escape
-            //     "abc\xff\tdef"
-            // ),
+            (
+                "1c esc stripped",
+                8, 0, 1, '.', Formatting.StripEscape,
+                slice.Make($"{0xff::}\t{0xff::}").AsUstring(),
+                "\t"
+            ),
+
+            (
+                "1c esc",
+                8, 0, 1, '.', Formatting.None,
+                slice.Make($"{0xff::}\t{0xff::}").AsUstring(),
+                slice.Make($"{0xff::}\t{0xff::}").AsUstring()
+            ),
+            (
+                "1d esc stripped",
+                8, 0, 1, '.', Formatting.StripEscape,
+                slice.Make($"{0xff::}\"foo\t\n\tbar\"{0xff::}").AsUstring(),
+                "\"foo\t\n\tbar\""
+            ),
+            (
+                "1d esc",
+                8, 0, 1, '.', Formatting.None,
+                slice.Make($"{0xff::}\"foo\t\n\tbar\"{0xff::}").AsUstring(),
+                slice.Make($"{0xff::}\"foo\t\n\tbar\"{0xff::}").AsUstring()
+            ),
+            (
+                "1e esc stripped",
+                8, 0, 1, '.', Formatting.StripEscape,
+                slice.Make($"abc{0xff::}\tdef").AsUstring(), // unterminated escape
+                "abc\tdef"
+            ),
+            (
+                "1e esc",
+                8, 0, 1, '.', Formatting.None,
+                slice.Make($"abc{0xff::}\tdef").AsUstring(), // unterminated escape
+                slice.Make($"abc{0xff::}\tdef").AsUstring()
+            ),
         
             (
                 "2",
@@ -276,71 +289,71 @@ namespace gozer.text
                 "e) foo..bar.....\n"
             ),
 
-            // (
-            //     "7f",
-            //     8, 0, 1, '.', Formatting.FilterHTML,
-            //     "f) f&lt;o\t<b>bar</b>\t\n",
-            //     "f) f&lt;o..<b>bar</b>.....\n"
-            // ),
+            (
+                "7f",
+                8, 0, 1, '.', Formatting.FilterHTML,
+                (ustring)"f) f&lt;o\t<b>bar</b>\t\n",
+                (ustring)"f) f&lt;o..<b>bar</b>.....\n"
+            ),
         
-            // (
-            //     "7g",
-            //     8, 0, 1, '.', Formatting.FilterHTML,
-            //     "g) f&lt;o\t<b>bar</b>\t non-terminated entity &amp",
-            //     "g) f&lt;o..<b>bar</b>..... non-terminated entity &amp"
-            // ),
+            (
+                "7g",
+                8, 0, 1, '.', Formatting.FilterHTML,
+                (ustring)"g) f&lt;o\t<b>bar</b>\t non-terminated entity &amp",
+                (ustring)"g) f&lt;o..<b>bar</b>..... non-terminated entity &amp"
+            ),
 
-            // (
-            //     "7g debug",
-            //     8, 0, 1, '.', FilterHTML | Debug,
-            //     "g) f&lt;o\t<b>bar</b>\t non-terminated entity &amp",
-            //     "g) f&lt;o..|<b>bar</b>.....| non-terminated entity &amp",
-            // ),
+            (
+                "7g debug",
+                8, 0, 1, '.', Formatting.FilterHTML | Formatting.Debug,
+                (ustring)"g) f&lt;o\t<b>bar</b>\t non-terminated entity &amp",
+                (ustring)"g) f&lt;o..|<b>bar</b>.....| non-terminated entity &amp"
+            ),
         
             (
                 "8",
                 8, 0, 1, '*', Formatting.None,
-                "Hello, world!\n",
-                "Hello, world!\n"
+                (ustring)"Hello, world!\n",
+                (ustring)"Hello, world!\n"
             ),
         
-            // (
-            //     "9a",
-            //     1, 0, 0, '.', Formatting.None,
-            //     "1\t2\t3\t4\n" +
-            //         "11\t222\t3333\t44444\n",
+            (
+                "9a",
+                1, 0, 0, '.', Formatting.None,
+                (ustring)"1\t2\t3\t4\n" +
+                    "11\t222\t3333\t44444\n",
         
-            //     "1.2..3...4\n" +
-            //         "11222333344444\n"
-            // ),
+                (ustring)"1.2..3...4\n" +
+                    "11222333344444\n"
+            ),
+
+            (
+                "9b",
+                1, 0, 0, '.', Formatting.FilterHTML,
+                (ustring)"1\t2<!---\f--->\t3\t4\n" + // \f inside HTML is ignored
+                    "11\t222\t3333\t44444\n",
         
-            // (
-            //     "9b",
-            //     1, 0, 0, '.', Formatting.FilterHTML,
-            //     "1\t2<!---\f--->\t3\t4\n" + // \f inside HTML is ignored
-            //         "11\t222\t3333\t44444\n",
-        
-            //     "1.2<!---\f--->..3...4\n" +
-            //         "11222333344444\n"
-            // ),
+                (ustring)"1.2<!---\f--->..3...4\n" +
+                    "11222333344444\n"
+            ),
         
             (
                 "9c",
                 1, 0, 0, '.', Formatting.None,
-                "1\t2\t3\t4\f" + // \f causes a newline and flush
+                (ustring)"1\t2\t3\t4\f" + // \f causes a newline and flush
                     "11\t222\t3333\t44444\n",
         
-                "1234\n" +
+                (ustring)"1234\n" +
                     "11222333344444\n"
             ),
         
             (
                 "9c debug",
                 1, 0, 0, '.', Formatting.Debug,
-                "1\t2\t3\t4\f" + // \f causes a newline and flush
+                (ustring)"1\t2\t3\t4\f" + // \f causes a newline and flush
                     "11\t222\t3333\t44444\n",
         
-                "1|2|3|4\n" +
+                (ustring)"1|2|3|4\n" +
                     "---\n" +
                     "11|222|3333|44444\n"
             ),
@@ -348,92 +361,66 @@ namespace gozer.text
             (
                 "10a",
                 5, 0, 0, '.', Formatting.None,
-                "1\t2\t3\t4\n",
-                "1....2....3....4\n"
+                (ustring)"1\t2\t3\t4\n",
+                (ustring)"1....2....3....4\n"
             ),
         
             (
                 "10b",
                 5, 0, 0, '.', Formatting.None,
-                "1\t2\t3\t4\t\n",
-                "1....2....3....4....\n"
+                (ustring)"1\t2\t3\t4\t\n",
+                (ustring)"1....2....3....4....\n"
             ),
         
-            // TODO:  UTF16vsUTF8
-
-            // (
-            //     "11",
-            //     8, 0, 1, '.', Formatting.None,
-            //     "本\tb\tc\n" +
-            //         "aa\t\u672c\u672c\u672c\tcccc\tddddd\n" +
-            //         "aaa\tbbbb\n",
+            (
+                "11",
+                8, 0, 1, '.', Formatting.None,
+                (ustring)"本\tb\tc\n" +
+                    "aa\t\u672c\u672c\u672c\tcccc\tddddd\n" +
+                    "aaa\tbbbb\n",
         
-            //     "本.......b.......c\n" +
-            //         "aa......本本本.....cccc....ddddd\n" +
-            //         "aaa.....bbbb\n"
-            // ),
-            // (
-            //     "12a",
-            //     8, 0, 1, ' ', Formatting.AlignRight,
-            //     "a\tè\tc\t\n" +
-            //         "aa\tèèè\tcccc\tddddd\t\n" +
-            //         "aaa\tèèèè\t\n",
+                (ustring)"本.......b.......c\n" +
+                    "aa......本本本.....cccc....ddddd\n" +
+                    "aaa.....bbbb\n"
+            ),
+            (
+                "12a",
+                8, 0, 1, ' ', Formatting.AlignRight,
+                (ustring)"a\tè\tc\t\n" +
+                    "aa\tèèè\tcccc\tddddd\t\n" +
+                    "aaa\tèèèè\t\n",
         
-            //     "       a       è       c\n" +
-            //         "      aa     èèè    cccc   ddddd\n" +
-            //         "     aaa    èèèè\n"
-            // ),
-        
+                (ustring)"       a       è       c\n" +
+                    "      aa     èèè    cccc   ddddd\n" +
+                    "     aaa    èèèè\n"
+            ),
             (
                 "12b",
                 2, 0, 0, ' ', Formatting.None,
-                "a\tb\tc\n" +
+                (ustring)"a\tb\tc\n" +
                     "aa\tbbb\tcccc\n" +
                     "aaa\tbbbb\n",
         
-                "a  b  c\n" +
+                (ustring)"a  b  c\n" +
                     "aa bbbcccc\n" +
                     "aaabbbb\n"
-            ),
-        
+            ),        
             (
                 "12c",
                 8, 0, 1, '_', Formatting.None,
-                "a\tb\tc\n" +
+                (ustring)"a\tb\tc\n" +
                     "aa\tbbb\tcccc\n" +
                     "aaa\tbbbb\n",
         
-                "a_______b_______c\n" +
+                (ustring)"a_______b_______c\n" +
                     "aa______bbb_____cccc\n" +
                     "aaa_____bbbb\n"
             ),
         
-            // TODO: UTF16vsUTF8 ?
-
-            // (
-            //     "13a",
-            //     4, 0, 1, '-', Formatting.None,
-            //     "4444\t日本語\t22\t1\t333\n" +
-            //         "999999999\t22\n" +
-            //         "7\t22\n" +
-            //         "\t\t\t88888888\n" +
-            //         "\n" +
-            //         "666666\t666666\t666666\t4444\n" +
-            //         "1\t1\t999999999\t0000000000\n",
-        
-            //     "4444------日本語-22--1---333\n" +
-            //         "999999999-22\n" +
-            //         "7---------22\n" +
-            //         "------------------88888888\n" +
-            //         "\n" +
-            //         "666666-666666-666666----4444\n" +
-            //         "1------1------999999999-0000000000\n"
-            // ),
-        
             (
-                "13b",
-                4, 0, 3, '.', Formatting.None,
-                "4444\t333\t22\t1\t333\n" +
+                "13a",
+                4, 0, 1, '-', Formatting.None,
+                (ustring)"4444\t日本語\t22\t1\t333\n" +
                     "999999999\t22\n" +
                     "7\t22\n" +
                     "\t\t\t88888888\n" +
@@ -441,7 +428,27 @@ namespace gozer.text
                     "666666\t666666\t666666\t4444\n" +
                     "1\t1\t999999999\t0000000000\n",
         
-                "4444........333...22...1...333\n" +
+                (ustring)"4444------日本語-22--1---333\n" +
+                    "999999999-22\n" +
+                    "7---------22\n" +
+                    "------------------88888888\n" +
+                    "\n" +
+                    "666666-666666-666666----4444\n" +
+                    "1------1------999999999-0000000000\n"
+            ),
+        
+            (
+                "13b",
+                4, 0, 3, '.', Formatting.None,
+                (ustring)"4444\t333\t22\t1\t333\n" +
+                    "999999999\t22\n" +
+                    "7\t22\n" +
+                    "\t\t\t88888888\n" +
+                    "\n" +
+                    "666666\t666666\t666666\t4444\n" +
+                    "1\t1\t999999999\t0000000000\n",
+        
+                (ustring)"4444........333...22...1...333\n" +
                     "999999999...22\n" +
                     "7...........22\n" +
                     "....................88888888\n" +
@@ -450,25 +457,25 @@ namespace gozer.text
                     "1........1........999999999...0000000000\n"
             ),
         
-            // (
-            //     "13c",
-            //     8, 8, 1, '\t', Formatting.FilterHTML,
-            //     "4444\t333\t22\t1\t333\n" +
-            //         "999999999\t22\n" +
-            //         "7\t22\n" +
-            //         "\t\t\t88888888\n" +
-            //         "\n" +
-            //         "666666\t666666\t666666\t4444\n" +
-            //         "1\t1\t<font color=red attr=日本語>999999999</font>\t0000000000\n",
+            (
+                "13c",
+                8, 8, 1, '\t', Formatting.FilterHTML,
+                "4444\t333\t22\t1\t333\n" +
+                    "999999999\t22\n" +
+                    "7\t22\n" +
+                    "\t\t\t88888888\n" +
+                    "\n" +
+                    "666666\t666666\t666666\t4444\n" +
+                    "1\t1\t<font color=red attr=日本語>999999999</font>\t0000000000\n",
         
-            //     "4444\t\t333\t22\t1\t333\n" +
-            //         "999999999\t22\n" +
-            //         "7\t\t22\n" +
-            //         "\t\t\t\t88888888\n" +
-            //         "\n" +
-            //         "666666\t666666\t666666\t\t4444\n" +
-            //         "1\t1\t<font color=red attr=日本語>999999999</font>\t0000000000\n"
-            // ),
+                "4444\t\t333\t22\t1\t333\n" +
+                    "999999999\t22\n" +
+                    "7\t\t22\n" +
+                    "\t\t\t\t88888888\n" +
+                    "\n" +
+                    "666666\t666666\t666666\t\t4444\n" +
+                    "1\t1\t<font color=red attr=日本語>999999999</font>\t0000000000\n"
+            ),
         
             (
                 "14",
@@ -615,14 +622,28 @@ namespace gozer.text
             ),
         };
 
-        [TestMethod]
-        public void Test()
+        public static IEnumerable<object[]> GetTestData()
         {
-            foreach (var e in tests)
-            {
-                Buffer.Check(e.testname, e.minwidth, e.tabwidth, e.padding, (byte)e.padchar, e.flags,
-                        e.src, e.expected);
-            }
-        }                
+            return tests.Select(x => new object[] { x.testname, x });
+        }
+
+        [DataTestMethod]
+        [MethodDataSource(typeof(TabWriterTests), nameof(GetTestData), 0)]
+        public void Test(string testname, object data)
+        {
+            var e = ((string testname, int minwidth, int tabwidth, int padding, char padchar,
+            Formatting flags, ustring src, ustring expected))data;
+
+            // foreach (var e in tests)
+            // {
+                // DBG:
+                TestContext.WriteLine($"Test: {e.testname}");
+                TestContext.WriteLine($"src = {e.src.Slice()}");
+                TestContext.WriteLine($"exp = {e.expected.Slice()}");
+
+                Buffer.Check(TestContext, e.testname, e.minwidth, e.tabwidth, e.padding,
+                        (byte)e.padchar, e.flags, e.src, e.expected);
+            // }
+        }
     }
 }

@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using NStack;
 
 namespace gozer
 {
@@ -30,6 +32,170 @@ namespace gozer
             if (upper == -1) upper = slice._upper;
             var count = upper - lower;
             s.Write(slice._array, lower, count);
+        }
+
+
+        /// A format string is composed of zero or more runs of fixed text
+        /// intermixed with one or more format items.  Format items take
+        /// the following form:
+        ///
+        ///  <c>{</c><i>index</i>[<c>,</c><i>alignment</i>][<c>:</c><i>formatString</i>]]<c>}</c>
+        ///
+        /// This <c>Make</c> routine takes a formattable string and converts it to a
+        /// slice of bytes.  It has special support for embedding byte values within
+        /// the string that are normally not possible to encode in a normal CLR string.
+        /// To embed such a byte value, for example 0xff, you specify a format item in
+        /// the formattable string with a the special format suffix of <c>::</c>. 
+        ///
+        /// For example, if you specify the following:
+        /// <code>
+        ///    slice.Make($"Sample {0xff::} Embedded")
+        /// </code>
+        /// then it will return a byte slice that contains the following values:
+        /// <code>
+        ///    as byte[] :  83  97 109 112 108 101  32 255  32  69 109  98 101 100 100 101 100
+        ///    as char[] : 'S' 'a' 'm' 'p' 'l' 'e' ' '  ff ' ' 'E' 'm' 'b' 'e' 'd' 'd' 'e' 'd'
+        /// </code>
+        ///
+        /// In addition to the single-byte format variation, you can specify 2-, 3- and 4-byte
+        /// variations using the format string suffix of <c>::2</c>, <c>::3</c> and <c>::4</c>
+        /// respectively.  In these cases, the value associated with the format item will be
+        /// interpretted as either an unsigned short (16 bits/2 bytes) or an unsigned int
+        /// (24 bits/3 bytes or 32 bits/4 bytes).  The higher-order bytes will map to the lower
+        /// index positions in the resulting byte slice.  For example:
+        /// <code>
+        ///    slice.Make($"Sample {0xa0fe::2} {0xfafbfcfd::3} Embedded")
+        /// </code>
+        /// would return a byte slice that contains the following values:
+        /// <code>
+        ///    as byte[] :  83  97 109 112 108 101  32 160 254  32 251 252 253  32  69 109  98 101 100 100 101 100
+        ///    as char[] : 'S' 'a' 'm' 'p' 'l' 'e' ' '  a0  fe' '   fb  fc  fd ' ' 'E' 'm' 'b' 'e' 'd' 'd' 'e' 'd'
+        /// </code>
+        ///
+        /// You'll note that for the 3-byte format item, we have to provide a 4-byte equivalent value,
+        /// a 32-bit integer, but the high-order byte (0xfa in this case) is ignored.  If we used a
+        /// 4-byte format item (::4) then all four bytes of the format item value would be embedded in
+        /// the resultant value.
+        ///
+        /// Finally, if you the format item format string begins with <c>::</c> but contains any values
+        /// afterwards that are not understood or supported, the default behavior is to treat the value
+        /// as a single-byte to be embedded.
+        public static slice<byte> Make(this FormattableString s)
+        {
+            var fmt = s.Format.Replace("\x00", "\x00\x00"); // Escape all embedded nil chars
+            var prv = new ByteSliceFormatProvider(); // construct provider instance which will have state
+            var str = string.Format(prv, fmt, s.GetArguments()); // First pass along and do normal substitution
+
+            // Go through each of the provider's store of escaped objects
+            // and add up how many bytes they will occupy in the final array
+            var ext = 0;
+            for (int i = 0; i < prv.ArgCount; i++)
+                ext += prv[i].size;
+
+            // Convert to bytes including the escaped place-holders
+            var src = Encoding.UTF8.GetBytes(str);
+            // Allocate enough space to hold the final byte array:
+            //   the size of the src array, minus 2 bytes for
+            //   each escaped placeholder, plus the computed
+            //   size that the escaped values will occupy
+            //   minus the number of escaped nil chars
+            var dst = new byte[
+                    src.Length
+                    - (prv.ArgCount * 2)
+                    + ext
+                    - (fmt.Length - s.Format.Length)];
+
+            for (int i = 0, j = 0; i < src.Length; i++, j++)
+            {
+                if (src[i] == 0) // We found the escape (null char)
+                {
+                    if (src[++i] == 0)
+                    {
+                        // Just an escaped null char
+                        dst[j] = 0;
+                    }
+                    else
+                    {
+                        // After the escape is the index (+1) into the
+                        // provider's storage of escaped object values
+                        var arg = prv[src[i] - 1];
+                        switch (arg.size)
+                        {
+                            case 4:
+                                var v4 = Convert.ToUInt32(arg.arg);
+                                dst[j++] = (byte)(0xff & (v4 >> 24));
+                                dst[j++] = (byte)(0xff & (v4 >> 16));
+                                dst[j++] = (byte)(0xff & (v4 >> 8));
+                                dst[j] = (byte)(0xff & (v4));
+                                break;
+                            case 3:
+                                var v3 = Convert.ToUInt32(arg.arg);
+                                dst[j++] = (byte)(0xff & (v3 >> 16));
+                                dst[j++] = (byte)(0xff & (v3 >> 8));
+                                dst[j] = (byte)(0xff & (v3));
+                                break;
+                            case 2:
+                                var v2 = Convert.ToUInt16(arg.arg);
+                                dst[j++] = (byte)(0xff & (v2 >> 8));
+                                dst[j] = (byte)(0xff & (v2));
+                                break;
+                            default:
+                                dst[j] = Convert.ToByte(arg.arg);
+                                break;
+                        }
+                    }
+                }
+                else
+                {
+                    dst[j] = src[i];
+                }
+            }
+
+            return dst.Slice();
+
+            // for ( var i = 0; i < prv.ArgCount; i++)
+            // {
+            //     str = str.Replace(new char)
+            // }
+
+            // //return s?.Format;
+            // return s?.ToString();
+
+        }
+
+        class ByteSliceFormatProvider : IFormatProvider, ICustomFormatter
+        {
+            private slice<(object arg, int size)> _args;
+
+            public int ArgCount => _args.Length;
+            public (object arg, int size) this[int index] => _args[index];
+
+            public object GetFormat(Type formatType)
+            {
+                if (formatType == typeof(ICustomFormatter))
+                    return this;
+                return null;
+            }
+
+            public string Format(string format, object arg, IFormatProvider formatProvider)
+            {
+                if (format != null && format.StartsWith(":"))
+                {
+                    if (format == ":4") _args = _args.Append((arg, 4));
+                    else
+                    if (format == ":3") _args = _args.Append((arg, 3));
+                    else
+                    if (format == ":2") _args = _args.Append((arg, 2));
+                    else 
+                        _args = _args.Append((arg, 1));
+
+                    return new string(new char[] { (char)0, (char)(_args.Length) });
+                }
+                else
+                {
+                    return arg.ToString();
+                }
+            }
         }
     }
 

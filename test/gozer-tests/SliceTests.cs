@@ -269,7 +269,9 @@ namespace gozer
         [TestMethod]
         public void TestValueChanges()
         {
-            var array = new int[] { 0, 1, 2, 3, 4 };
+
+            var orig = new int[] { 0, 1, 2, 3, 4 };
+            var array = slice<int>.Empty.AppendAll(orig.Slice());
 
             var s1 = array.Slice();
             Assert.AreEqual("[0 1 2 3 4]", s1.ToString());
@@ -286,23 +288,22 @@ namespace gozer
             Assert.AreEqual("[0 10 22 32 42]", s1.ToString());
             Assert.AreEqual("[0 10 22 32 42]", slice<int>.ToString(array));
 
-            // var s3 = array.slice(upper: 2);
-            // Assert.AreEqual("[0 1]", s3.ToString());
+            var s3 = orig.Slice(upper: 2);
+            Assert.AreEqual("[0 1]", s3.ToString());
 
-            // var s4 = array.slice(2, 3);
-            // Assert.AreEqual("[2]", s4.ToString());
-            // Assert.AreEqual(3, s4.Capacity);
-            // var s5 = s4.slice(0);
-            // Assert.AreEqual("[2]", s5.ToString());
-            // Assert.AreEqual(3, s5.Capacity);
-            // s5 = s4.slice(0, 3);
-            // Assert.AreEqual("[2 3 4]", s5.ToString());
-            // Assert.AreEqual(3, s5.Capacity);
+            var s4 = orig.Slice(2, 3);
+            Assert.AreEqual("[2]", s4.ToString());
+            Assert.AreEqual(3, s4.Capacity);
+            var s5 = s4.Slice(0);
+            Assert.AreEqual("[2]", s5.ToString());
+            Assert.AreEqual(3, s5.Capacity);
+            s5 = s4.Slice(0, 3);
+            Assert.AreEqual("[2 3 4]", s5.ToString());
+            Assert.AreEqual(3, s5.Capacity);
             
-            // var s6 = s3.slice(2, 5);
-            // Assert.AreEqual("[2 3 4]", s5.ToString());
-            // Assert.AreEqual(3, s5.Capacity);
-
+            var s6 = s3.Slice(2, 5);
+            Assert.AreEqual("[2 3 4]", s5.ToString());
+            Assert.AreEqual(3, s5.Capacity);
         }
 
         [TestMethod]

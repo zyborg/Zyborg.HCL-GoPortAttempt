@@ -1,10 +1,16 @@
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NStack;
 
 namespace gozer
 {
     [TestClass]
     public class OtherGoSliceTests
     {
+        public TestContext TestContext
+        { get; set; }
+
+
         [TestMethod]
         public void TestIndexOfC()
         {
@@ -53,6 +59,57 @@ namespace gozer
             Assert.AreEqual(s1, s2);
             Assert.AreEqual( 0, a1.IndexOf(s2.AsCharSlice()));
             Assert.AreEqual(-1, a1.IndexOf((s2 + "z").AsCharSlice()));
+        }
+
+
+        static FormattableString sampleIn = $"sam\x00ple {0xff::} str{0xa0fe::2} {0xfafbfcfd::3} {0xfafbfcfd::4} {(byte)0xfd::anything else}";
+        static byte[] sampleOut = new [] {
+            (byte)'s',
+            (byte)'a',
+            (byte)'m',
+            (byte)0x00,
+            (byte)'p',
+            (byte)'l',
+            (byte)'e',
+            (byte)' ',
+            (byte)0xff,
+            (byte)' ',
+            (byte)'s',
+            (byte)'t',
+            (byte)'r',
+            (byte)0xa0,
+            (byte)0xfe,
+            (byte)' ',
+            (byte)0xfb,
+            (byte)0xfc,
+            (byte)0xfd,
+            (byte)' ',
+            (byte)0xfa,
+            (byte)0xfb,
+            (byte)0xfc,
+            (byte)0xfd,
+            (byte)' ',
+            (byte)0xfd,
+            };
+
+        [TestMethod]
+        public void TestUstringFromStringAndBytes()
+        {
+            // var s = Ustring.sampleIn.ToString();
+            // var b = Encoding.UTF8.GetBytes(s);
+
+            // var bs = b.Slice();
+            // var ex = Ustring.sampleOut.Slice();
+
+            sampleIn.Make();
+            var s = slice.Make(sampleIn);
+            var b = (ustring)sampleOut;
+
+            TestContext.WriteLine("");
+            TestContext.WriteLine($"s = [{s}] : [{s.AsString()}] : [{s.AsUstring()}]");
+            TestContext.WriteLine($"b = [{b}]");
+
+            Assert.AreEqual(b.ToByteArray().Slice().ToString(), s.ToArray().Slice().ToString());
         }
     }
 }

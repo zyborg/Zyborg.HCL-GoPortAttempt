@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using NStack;
 
 namespace gozer.io
 {
@@ -21,6 +22,11 @@ namespace gozer.io
         {
             w.Write(s.ToCharArray().Select(x => (byte)x).ToArray().Slice());
             // w.Write(s.AsByteSlice());
+        }
+
+        public static void WriteString(this IWriter w, ustring s)
+        {
+            w.Write(s.ToByteArray().Slice());
         }
     }
 }

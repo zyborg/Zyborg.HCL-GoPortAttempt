@@ -281,7 +281,7 @@ namespace Zyborg.HCL.scanner
                 }
             }
 
-            System.IO.File.WriteAllText(@"C:\local\prj\bek\zyborg\Zyborg.HCL\test\Zyborg.HCL-tests\ScannerTests-out.txt", buf.Bytes().AsString());
+            //System.IO.File.WriteAllText(@"C:\local\prj\bek\zyborg\Zyborg.HCL\test\Zyborg.HCL-tests\ScannerTests-out.txt", buf.Bytes().AsString());
 
             var s = Scanner.New(buf.Bytes());
 
